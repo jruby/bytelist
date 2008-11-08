@@ -41,7 +41,7 @@
   </target>
 
   <target name="jar" depends="test" description="Create the bytelist.jar file">
-    <jar destfile="lib/bytelist-0.1.jar">
+    <jar destfile="lib/bytelist-1.0.1.jar">
       <fileset dir="build/classes">
         <include name="**/*.class"/>
         <include name="**/*.properties"/>
@@ -54,6 +54,6 @@
 
   <target name="clean" depends="init" description="clean everything">
     <delete dir="build"/>
-    <delete file="lib/bytelist-0.1.jar" quiet="true"/>
+    <delete file="lib/bytelist-1.0.1.jar" quiet="true"/>
   </target>
 </project>
