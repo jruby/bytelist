@@ -36,6 +36,9 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
+import org.jcodings.Encoding;
+import org.jcodings.ascii.AsciiTables;
+
 
 /**
  *
@@ -50,9 +53,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public byte[] bytes;
     public int begin;
     public int realSize;
+    public Encoding encoding;
 
     int hash;
-    boolean validHash = false;
     String stringValue;
 
     private static final int DEFAULT_SIZE = 4;
@@ -68,12 +71,18 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize = 0;
     }
 
+    public ByteList(byte[] bytes, Encoding encoding) {
+        this.bytes = bytes;
+        this.realSize = bytes.length;
+        this.encoding = encoding;
+    }
+
     public ByteList(byte[] wrap) {
         this(wrap,true);
     }
 
     public ByteList(byte[] wrap, boolean copy) {
-        if (wrap == null) throw new NullPointerException("Invalid argument: constructing with null array");
+        assert wrap != null;
         if(copy) {
             bytes = (byte[])wrap.clone();
         } else {
@@ -95,8 +104,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public ByteList(byte[] wrap, int index, int len, boolean copy) {
-        if (wrap == null) throw new NullPointerException("Invalid argument: constructing with null array");
-        if(copy || index != 0) {
+        assert wrap != null;
+        if (copy || index != 0) {
             bytes = new byte[len];
             System.arraycopy(wrap, index, bytes, 0, len);
         } else {
@@ -135,7 +144,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         while (read < length) {
             n = input.read(bytes, begin + read, length - read);
             if (n == -1) {
-                if(read == 0) throw new java.io.EOFException();
+                if (read == 0) throw new java.io.EOFException();
                 break;
             }
             read += n;
@@ -157,7 +166,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     public ByteList dup() {
         ByteList dup = dup(realSize);
-        dup.validHash = validHash;
         dup.hash = hash;
         dup.stringValue = stringValue;
         return dup;
@@ -177,6 +185,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         System.arraycopy(bytes, begin, dup.bytes, 0, newRealSize);
         dup.realSize = newRealSize;
         dup.begin = 0;
+        dup.encoding = encoding;
         return dup;
     }
 
@@ -193,6 +202,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         shared.bytes = bytes;
         shared.realSize = len;        
         shared.begin = begin + index;
+        shared.encoding = encoding;
         return shared;
     }
 
@@ -219,7 +229,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public void invalidate() {
-        validHash = false;
+        hash = 0;
         stringValue = null;
     }
 
@@ -260,23 +270,29 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return realSize;
     }
 
+    public int lengthEnc() {
+        return encoding.strLength(bytes, begin, begin + realSize);
+    }
+
     public void length(int newLength) {
         grow(newLength - realSize);
         realSize = newLength;
     }
 
     public int get(int index) {
-        if (index >= realSize) throw new IndexOutOfBoundsException();
         return bytes[begin + index];
     }
 
+    public int getEnc(int index) {
+        return encoding.strCodeAt(bytes, begin, begin + realSize, index);
+    }
+
     public void set(int index, int b) {
-        if (index >= realSize) throw new IndexOutOfBoundsException();
         bytes[begin + index] = (byte)b;
     }
 
     public void replace(byte[] newBytes) {
-        if (newBytes == null) throw new NullPointerException("Invalid argument: replacing with null array");
+        assert newBytes != null;
         this.bytes = newBytes;
         realSize = newBytes.length;
     }
@@ -318,14 +334,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public void replace(int beg, int len, byte[] nbytes, int index, int count) {
-        if (len - beg > realSize) throw new IndexOutOfBoundsException();
-        unsafeReplace(beg,len,nbytes,index,count);
+        unsafeReplace(beg, len, nbytes, index, count);
     }
 
     public void insert(int index, int b) {
-        if (index >= realSize) throw new IndexOutOfBoundsException();
         grow(1);
-        System.arraycopy(bytes,index,bytes,index+1,realSize-index);
+        System.arraycopy(bytes, index, bytes, index + 1, realSize - index);
         bytes[index] = (byte)b;
         realSize++;
     }
@@ -461,25 +475,27 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         if (other instanceof ByteList) return equal((ByteList)other);
         return false;
     }
-    
+
     public boolean equal(ByteList other) {
         if (other == this) return true; 
-        if (validHash && other.validHash && hash != other.hash) return false;
-            int first;
-            int last;
-            byte[] buf;
+        if (hash != 0 && other.hash != 0 && hash != other.hash) return false;
+
+        int first, last;
         if ((last = realSize) == other.realSize) {
-                // scanning from front and back simultaneously, meeting in
-                // the middle. the object is to get a mismatch as quickly as
-                // possible. alternatives might be: scan from the middle outward
-                // (not great because it won't pick up common variations at the
-                // ends until late) or sample odd bytes forward and even bytes
-                // backward (I like this one, but it's more expensive for
-                // strings that are equal; see sample_equals below).
-                for (buf = bytes, first = -1; 
-                --last > first && buf[begin + last] == other.bytes[other.begin + last] &&
-                ++first < last && buf[begin + first] == other.bytes[other.begin + first] ; ) ;
-                return first >= last;
+            byte buf[] = bytes;
+            byte otherBuf[] = other.bytes;
+            // scanning from front and back simultaneously, meeting in
+            // the middle. the object is to get a mismatch as quickly as
+            // possible. alternatives might be: scan from the middle outward
+            // (not great because it won't pick up common variations at the
+            // ends until late) or sample odd bytes forward and even bytes
+            // backward (I like this one, but it's more expensive for
+            // strings that are equal; see sample_equals below).
+
+            for (first = -1; 
+            --last > first && buf[begin + last] == otherBuf[other.begin + last] &&
+            ++first < last && buf[begin + first] == otherBuf[other.begin + first] ; ) ;
+            return first >= last;
             }
         return false;
     }
@@ -536,54 +552,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return size == other.realSize ? 0 : size == len ? -1 : 1;
     }
 
-    private static final char[] caseTable = {
-            '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
-            '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
-            '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
-            '\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
-            /* ' '     '!'     '"'     '#'     '$'     '%'     '&'     ''' */
-            '\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',
-            /* '('     ')'     '*'     '+'     ','     '-'     '.'     '/' */
-            '\050', '\051', '\052', '\053', '\054', '\055', '\056', '\057',
-            /* '0'     '1'     '2'     '3'     '4'     '5'     '6'     '7' */
-            '\060', '\061', '\062', '\063', '\064', '\065', '\066', '\067',
-            /* '8'     '9'     ':'     ';'     '<'     '='     '>'     '?' */
-            '\070', '\071', '\072', '\073', '\074', '\075', '\076', '\077',
-            /* '@'     'A'     'B'     'C'     'D'     'E'     'F'     'G' */
-            '\100', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
-            /* 'H'     'I'     'J'     'K'     'L'     'M'     'N'     'O' */
-            '\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
-            /* 'P'     'Q'     'R'     'S'     'T'     'U'     'V'     'W' */
-            '\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
-            /* 'X'     'Y'     'Z'     '['     '\'     ']'     '^'     '_' */
-            '\170', '\171', '\172', '\133', '\134', '\135', '\136', '\137',
-            /* '`'     'a'     'b'     'c'     'd'     'e'     'f'     'g' */
-            '\140', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
-            /* 'h'     'i'     'j'     'k'     'l'     'm'     'n'     'o' */
-            '\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
-            /* 'p'     'q'     'r'     's'     't'     'u'     'v'     'w' */
-            '\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
-            /* 'x'     'y'     'z'     '{'     '|'     '}'     '~' */
-            '\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177',
-            '\200', '\201', '\202', '\203', '\204', '\205', '\206', '\207',
-            '\210', '\211', '\212', '\213', '\214', '\215', '\216', '\217',
-            '\220', '\221', '\222', '\223', '\224', '\225', '\226', '\227',
-            '\230', '\231', '\232', '\233', '\234', '\235', '\236', '\237',
-            '\240', '\241', '\242', '\243', '\244', '\245', '\246', '\247',
-            '\250', '\251', '\252', '\253', '\254', '\255', '\256', '\257',
-            '\260', '\261', '\262', '\263', '\264', '\265', '\266', '\267',
-            '\270', '\271', '\272', '\273', '\274', '\275', '\276', '\277',
-            '\300', '\301', '\302', '\303', '\304', '\305', '\306', '\307',
-            '\310', '\311', '\312', '\313', '\314', '\315', '\316', '\317',
-            '\320', '\321', '\322', '\323', '\324', '\325', '\326', '\327',
-            '\330', '\331', '\332', '\333', '\334', '\335', '\336', '\337',
-            '\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
-            '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
-            '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
-            '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
-    };
-
-
     public int caseInsensitiveCmp(final ByteList other) {
         if (other == this) return 0;
 
@@ -593,8 +561,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         final byte[] other_bytes = other.bytes;
 
         for (int offset = -1; ++offset < len;) {
-            char myCharIgnoreCase = caseTable[bytes[begin + offset]&0xFF];
-            char otherCharIgnoreCase = caseTable[other_bytes[other_begin + offset]&0xFF];
+            int myCharIgnoreCase = AsciiTables.ToLowerCaseTable[bytes[begin + offset] & 0xff];
+            int otherCharIgnoreCase = AsciiTables.ToLowerCaseTable[other_bytes[other_begin + offset] & 0xff];
             if (myCharIgnoreCase < otherCharIgnoreCase) {
                 return -1;
             } else if (myCharIgnoreCase > otherCharIgnoreCase) {
@@ -603,7 +571,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         }
         return size == other.realSize ? 0 : size == len ? -1 : 1;
     }
-
 
    /**
      * Returns the internal byte array. This is unsafe unless you know what you're
@@ -639,7 +606,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public int hashCode() {
-        if (validHash) return hash;
+        if (hash != 0) return hash;
 
         int key = 0;
         int index = begin;
@@ -649,7 +616,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             key = ((key << 16) + (key << 6) - key) + (int)(bytes[index++]); // & 0xFF ? 
         }
         key = key + (key >> 5);
-        validHash = true;
         return hash = key;
     }
 
