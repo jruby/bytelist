@@ -59,7 +59,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     String stringValue;
 
     private static final int DEFAULT_SIZE = 4;
-    private static final double FACTOR = 1.5;
 
     /** Creates a new instance of ByteList */
     public ByteList() {
@@ -594,12 +593,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     private void grow(int increaseRequested) {
-        if (increaseRequested < 0) {
-            return;
-        }
+        if (increaseRequested < 0) return;
+
         int newSize = realSize + increaseRequested;
-        if (bytes.length < newSize) {
-            byte[] newBytes = new byte[(int) (newSize * FACTOR)];
+        if (newSize > bytes.length) {
+            byte[] newBytes = new byte[newSize + (newSize >> 1)];
             if (bytes.length != 0) System.arraycopy(bytes, 0, newBytes, 0, realSize);
             bytes = newBytes;
         }
