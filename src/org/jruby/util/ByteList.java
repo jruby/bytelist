@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 
 import org.jcodings.Encoding;
 import org.jcodings.ascii.AsciiTables;
+import org.jcodings.specific.ASCIIEncoding;
 
 
 /**
@@ -53,8 +54,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public byte[] bytes;
     public int begin;
     public int realSize;
-    public Encoding encoding;
-
+    public Encoding encoding = ASCIIEncoding.INSTANCE;
     int hash;
     String stringValue;
 
