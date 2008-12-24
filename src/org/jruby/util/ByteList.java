@@ -77,12 +77,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public ByteList(byte[] wrap) {
-        this(wrap,true);
+        this (wrap, true);
     }
 
     public ByteList(byte[] wrap, boolean copy) {
         assert wrap != null;
-        if(copy) {
+        if (copy) {
             bytes = (byte[])wrap.clone();
         } else {
             bytes = wrap;
@@ -165,6 +165,15 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     public ByteList dup() {
         ByteList dup = dup(realSize);
+        dup.hash = hash;
+        dup.stringValue = stringValue;
+        return dup;
+    }
+
+    public ByteList shallowDup() {
+        ByteList dup = new  ByteList(bytes, false); // will also dup realSize
+        dup.begin = begin;
+        dup.encoding = encoding;
         dup.hash = hash;
         dup.stringValue = stringValue;
         return dup;
