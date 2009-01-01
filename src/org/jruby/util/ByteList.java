@@ -158,6 +158,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         buffer.get(bytes, realSize, len);
         realSize += len;
     }
+    
+    public void fill(int b, int len) {
+        for ( ; --len >= 0; ) {
+            append(b);
+        }
+    }
 
     public Object clone() {
         return dup();
