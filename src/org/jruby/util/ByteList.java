@@ -237,7 +237,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public void unshare(int length) {
         byte[] tmp = new byte[length];
-        System.arraycopy(bytes, begin, tmp, 0, realSize);
+        System.arraycopy(bytes, begin, tmp, 0, Math.min(realSize, length));
         bytes = tmp;
         begin = 0;
     }
