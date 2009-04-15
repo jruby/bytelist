@@ -285,4 +285,13 @@ public class ByteListTest extends TestCase {
         assertEquals(-1, b.lastIndexOf('b', 5));
         assertEquals(-1, b.lastIndexOf(b2, 5));
     }
+
+    public void testShallowDup() {
+        ByteList b = new ByteList(10);
+        b.append("hello".getBytes());
+        ByteList d = b.shallowDup();
+
+        assertEquals(5, b.length());
+        assertEquals(5, d.length());
+    }
 }

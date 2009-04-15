@@ -177,7 +177,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public ByteList shallowDup() {
-        ByteList dup = new  ByteList(bytes, false); // will also dup realSize
+        ByteList dup = new  ByteList(bytes, false);
+        dup.realSize = realSize;
         dup.begin = begin;
         dup.encoding = encoding;
         dup.hash = hash;
