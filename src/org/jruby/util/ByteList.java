@@ -468,6 +468,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public boolean startsWith(ByteList other, int toffset) {
+        if (realSize == 0) return false;
+        
         byte[]ta = bytes;
         int to = begin + toffset;
         byte[]pa = other.bytes;

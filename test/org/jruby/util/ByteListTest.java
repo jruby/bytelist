@@ -294,4 +294,22 @@ public class ByteListTest extends TestCase {
         assertEquals(5, b.length());
         assertEquals(5, d.length());
     }
+
+    public void testEndsWithOnEmptyByteList() {
+        ByteList blank = new ByteList();
+        ByteList blankAndZeroLength = new ByteList(0);
+        ByteList str = new ByteList("hello".getBytes());
+
+        assertFalse(blank.endsWith(str));
+        assertFalse(blankAndZeroLength.endsWith(str));
+    }
+
+    public void testStartsWithOnEmptyByteList() {
+        ByteList blank = new ByteList();
+        ByteList blankAndZeroLength = new ByteList(0);
+        ByteList str = new ByteList("hello".getBytes());
+
+        assertFalse(blank.startsWith(str));
+        assertFalse(blankAndZeroLength.startsWith(str));
+    }
 }
