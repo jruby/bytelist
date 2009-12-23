@@ -45,15 +45,20 @@ import org.jcodings.specific.ASCIIEncoding;
  *
  * @author headius
  */
+@SuppressWarnings("deprecation")
 public final class ByteList implements Comparable, CharSequence, Serializable {
     private static final long serialVersionUID = -1286166947275543731L;
 
     public static final byte[] NULL_ARRAY = new byte[0];
     public static final ByteList EMPTY_BYTELIST = new ByteList(0);
 
+    @Deprecated
     public byte[] bytes;
+    @Deprecated
     public int begin;
+    @Deprecated
     public int realSize;
+    @Deprecated
     public Encoding encoding = ASCIIEncoding.INSTANCE;
     int hash;
     String stringValue;
@@ -93,7 +98,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public ByteList(ByteList wrap) {
         this(wrap.bytes, wrap.begin, wrap.realSize);
     }
-    
+
     public ByteList(ByteList wrap, boolean copy) {
         this(wrap.bytes, wrap.begin, wrap.realSize, false);
     }
@@ -135,7 +140,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         append((byte)b);
         return this;
     }
-    
+
     public ByteList append(InputStream input, int length) throws IOException {
         grow(length);
         int read = 0;
@@ -148,7 +153,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             }
             read += n;
         }
-        
+
         realSize += read;
         return this;
     }
@@ -158,7 +163,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         buffer.get(bytes, realSize, len);
         realSize += len;
     }
-    
+
     public void fill(int b, int len) {
         for ( ; --len >= 0; ) {
             append(b);
@@ -188,7 +193,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     /**
      * @param length is the value of how big the buffer is going to be, not the actual length to copy
-     * 
+     *
      * It is used by RubyString.modify(int) to prevent COW pathological situations
      * (namely to COW with having <code>length - realSize</code> bytes ahead)
      */
@@ -211,11 +216,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             bytes = tmp;
         }
     }
-    
+
     public ByteList makeShared(int index, int len) {
-        ByteList shared = new ByteList(false);        
+        ByteList shared = new ByteList(false);
         shared.bytes = bytes;
-        shared.realSize = len;        
+        shared.realSize = len;
         shared.begin = begin + index;
         shared.encoding = encoding;
         return shared;
@@ -229,10 +234,10 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public void unshare() {
         unshare(realSize);
     }
-    
+
     /**
      * @param length is the value of how big the buffer is going to be, not the actual length to copy
-     * 
+     *
      * It is used by RubyString.modify(int) to prevent COW pathological situations
      * (namely to COW with having <code>length - realSize</code> bytes ahead)
      */
@@ -274,7 +279,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         System.arraycopy(moreBytes, start, bytes, realSize, len);
         realSize += len;
     }
-    
+
     public void realloc(int length) {
         byte tmp[] = new byte[length];
         System.arraycopy(bytes, 0, tmp, 0, realSize);
@@ -380,7 +385,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public int indexOf(ByteList find) {
         return indexOf(find, 0);
     }
-    
+
     public int indexOf(ByteList find, int i) {
         return indexOf(bytes, begin, realSize, find.bytes, find.begin, find.realSize, i);
     }
@@ -436,7 +441,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     public int lastIndexOf(ByteList find, int pos) {
         return lastIndexOf(bytes, begin, realSize, find.bytes, find.begin, find.realSize, pos);
-    }    
+    }
 
     static int lastIndexOf(byte[] source, int sourceOffset, int sourceCount, byte[] target, int targetOffset, int targetCount, int fromIndex) {
         int rightIndex = sourceCount - targetCount;
@@ -469,7 +474,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     public boolean startsWith(ByteList other, int toffset) {
         if (realSize == 0) return false;
-        
+
         byte[]ta = bytes;
         int to = begin + toffset;
         byte[]pa = other.bytes;
@@ -494,7 +499,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public boolean equal(ByteList other) {
-        if (other == this) return true; 
+        if (other == this) return true;
         if (hash != 0 && other.hash != 0 && hash != other.hash) return false;
 
         int first, last;
@@ -509,7 +514,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             // backward (I like this one, but it's more expensive for
             // strings that are equal; see sample_equals below).
 
-            for (first = -1; 
+            for (first = -1;
             --last > first && buf[begin + last] == otherBuf[other.begin + last] &&
             ++first < last && buf[begin + first] == otherBuf[other.begin + first] ; ) ;
             return first >= last;
@@ -531,9 +536,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             byte[] buf;
             if ((size = realSize) == b.realSize) {
                 // scanning from front and back simultaneously, sampling odd
-                // bytes on the forward iteration and even bytes on the 
+                // bytes on the forward iteration and even bytes on the
                 // reverse iteration. the object is to get a mismatch as quickly
-                // as possible. 
+                // as possible.
                 for (buf = bytes, first = -1, last = (size + 1) & ~1 ;
                     (last -= 2) >= 0 && buf[begin + last] == b.bytes[b.begin + last] &&
                     (first += 2) < size && buf[begin + first] == b.bytes[b.begin + first] ; ) ;
@@ -559,7 +564,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         // a bit of VM/JIT weirdness here: though in most cases
         // performance is improved if array references are kept in
         // a local variable (saves an instruction per access, as I
-        // [slightly] understand it), in some cases, when two (or more?) 
+        // [slightly] understand it), in some cases, when two (or more?)
         // arrays are being accessed, the member reference is actually
         // faster.  this is one of those cases...
         for (  ; ++offset < len && bytes[begin + offset] == other.bytes[other.begin + offset]; ) ;
@@ -597,7 +602,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @return the internal byte array
      */
     public byte[] unsafeBytes() {
-        return bytes;  
+        return bytes;
     }
 
     public byte[] bytes() {
@@ -626,10 +631,10 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
         int key = 0;
         int index = begin;
-        final int end = begin + realSize; 
+        final int end = begin + realSize;
         while (index < end) {
             // equivalent of: key = key * 65599 + byte;
-            key = ((key << 16) + (key << 6) - key) + (int)(bytes[index++]); // & 0xFF ? 
+            key = ((key << 16) + (key << 6) - key) + (int)(bytes[index++]); // & 0xFF ?
         }
         key = key + (key >> 5);
         return hash = key;
@@ -637,9 +642,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     /**
      * Remembers toString value, which is expensive for StringBuffer.
-     * 
+     *
      * @return an ISO-8859-1 representation of the byte list
-     */    
+     */
     public String toString() {
         try {
             if (stringValue == null) stringValue = new String(bytes, begin, realSize, "ISO-8859-1");
@@ -648,7 +653,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             throw new RuntimeException("ISO-8859-1 encoding should never fail; report this at www.jruby.org");
         }
     }
-    
+
     public static ByteList create(CharSequence s) {
         return new ByteList(plain(s),false);
     }
@@ -721,5 +726,66 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         }
         return 0;
 
+    }
+
+
+    /**
+     * @return the bytes
+     */
+    public final byte[] getUnsafeBytes() {
+        return bytes;
+    }
+
+    /**
+     * @param bytes the bytes to set
+     */
+    public final void setUnsafeBytes(byte[] bytes) {
+        assert bytes != null;
+        this.bytes = bytes;
+    }
+
+    /**
+     * @return the begin
+     */
+    public final int getBegin() {
+        return begin;
+    }
+
+    /**
+     * @param begin the begin to set
+     */
+    public final void setBegin(int begin) {
+        assert begin >= 0;
+        this.begin = begin;
+    }
+
+    /**
+     * @return the realSize
+     */
+    public final int getRealSize() {
+        return realSize;
+    }
+
+    /**
+     * @param realSize the realSize to set
+     */
+    public final void setRealSize(int realSize) {
+        assert realSize >= 0;
+        this.realSize = realSize;
+    }
+
+    /**
+     * @return the encoding
+     */
+    public final Encoding getEncoding() {
+        return encoding;
+    }
+
+    /**
+     * @param encoding the encoding to set
+     */
+    public final void setEncoding(Encoding encoding) {
+        assert encoding != null;
+        this.encoding = encoding;
     }
 }
