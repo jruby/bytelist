@@ -11,6 +11,7 @@
  * implied. See the License for the specific language governing
  * rights and limitations under the License.
  *
+ * Copyright (C) 2007-2010 JRuby Community
  * Copyright (C) 2007 Charles O Nutter <headius@headius.com>
  * Copyright (C) 2007 Nick Sieger <nicksieger@gmail.com>
  * Copyright (C) 2007 Ola Bini <ola@ologix.com>
@@ -30,16 +31,20 @@
  ***** END LICENSE BLOCK *****/
 package org.jruby.util;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.jcodings.Encoding;
 import org.jcodings.ascii.AsciiTables;
 import org.jcodings.specific.ASCIIEncoding;
-
 
 /**
  *
@@ -646,12 +651,10 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @return an ISO-8859-1 representation of the byte list
      */
     public String toString() {
-        try {
-            if (stringValue == null) stringValue = new String(bytes, begin, realSize, "ISO-8859-1");
-            return stringValue;
-        } catch (UnsupportedEncodingException uee) {
-            throw new RuntimeException("ISO-8859-1 encoding should never fail; report this at www.jruby.org");
+        if (stringValue == null) {
+            stringValue = decode(bytes, begin, realSize, "ISO-8859-1");
         }
+        return stringValue;
     }
 
     public static ByteList create(CharSequence s) {
@@ -659,12 +662,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public static byte[] plain(CharSequence s) {
-        if(s instanceof String) {
-            try {
-                return ((String)s).getBytes("ISO8859-1");
-            } catch(Exception e) {
-                //FALLTHROUGH
-            }
+        if (s instanceof String) {
+            return encode(s, "ISO-8859-1");
         }
         byte[] bytes = new byte[s.length()];
         for (int i = 0; i < bytes.length; i++) {
@@ -695,6 +694,35 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             chars[i] = (char) (b[i] & 0xFF);
         }
         return chars;
+    }
+
+    // Work around bad charset handling in JDK. See
+    // http://halfbottle.blogspot.com/2009/07/charset-continued-i-wrote-about.html
+    private static final ConcurrentMap<String,Charset> charsetsByAlias =
+        new ConcurrentHashMap<String,Charset>();
+
+    public static String decode(byte[] data, int offset, int length, String charsetName) {
+        Charset cs = lookup(charsetName);
+        return cs.decode(ByteBuffer.wrap(data, offset, length)).toString();
+    }
+
+    public static String decode(byte[] data, String charsetName) {
+        Charset cs = lookup(charsetName);
+        return cs.decode(ByteBuffer.wrap(data)).toString();
+    }
+
+    public static byte[] encode(CharSequence data, String charsetName) {
+        Charset cs = lookup(charsetName);
+        return cs.encode(CharBuffer.wrap(data)).array();
+    }
+
+    private static Charset lookup(String alias) {
+        Charset cs = charsetsByAlias.get(alias);
+        if (cs == null) {
+            cs = Charset.forName(alias);
+            charsetsByAlias.putIfAbsent(alias, cs);
+        }
+        return cs;
     }
 
     public char charAt(int ix) {
