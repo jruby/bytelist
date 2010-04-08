@@ -31,11 +31,9 @@
  ***** END LICENSE BLOCK *****/
 package org.jruby.util;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -47,8 +45,9 @@ import org.jcodings.ascii.AsciiTables;
 import org.jcodings.specific.ASCIIEncoding;
 
 /**
- *
- * @author headius
+ * ByteList is simple a collection of bytes in the same way a Java String is a collection
+ * of characters. However, it's API resembles StringBuffer/StringBuilder more than String
+ * because it is a mutable object.
  */
 @SuppressWarnings("deprecation")
 public final class ByteList implements Comparable, CharSequence, Serializable {
@@ -59,37 +58,76 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     @Deprecated
     public byte[] bytes;
+
     @Deprecated
     public int begin;
+
     @Deprecated
     public int realSize;
+
     @Deprecated
     public Encoding encoding = ASCIIEncoding.INSTANCE;
+
     int hash;
+
     String stringValue;
 
     private static final int DEFAULT_SIZE = 4;
 
-    /** Creates a new instance of ByteList */
+    /** 
+     * Creates a new instance of ByteList
+     */
     public ByteList() {
         this(DEFAULT_SIZE);
     }
 
+    /**
+     * Creates a new instance of Bytelist with a pre-allocated size.  If you know the size ahead
+     * of time this saves additional array allocations to grow the bytelist to the proper size.
+     *
+     * @param size to preallocate the bytelist to
+     */
     public ByteList(int size) {
         bytes = new byte[size];
         realSize = 0;
     }
 
+    /**
+     * Create a new instance of ByteList with the bytes supplied using the specified encoding.
+     *
+     * Important: bytes is used as the initial backing store for the bytelist.  Over time as the
+     * bytelist is mutated this backing store may be replaced with a new one to hold the additional
+     * bytes.  If you pass in bytes and then modify the contents of the original bytes, then those
+     * changes will get reflected.
+     *
+     * @param bytes to use
+     * @param encoding
+     */
+    // TODO: Deprecate and replace with a static method which implies the caveats of this constructor.
     public ByteList(byte[] bytes, Encoding encoding) {
         this.bytes = bytes;
         this.realSize = bytes.length;
         this.encoding = encoding;
     }
 
+    /**
+     * Create a new instance of ByteList with the contents of wrap.  This constructor will make
+     * a copy of bytes passed
+     *
+     * @param wrap the initial bytes for this ByteList
+     */
     public ByteList(byte[] wrap) {
-        this (wrap, true);
+        this(wrap, true);
     }
 
+    /**
+     * Create a new instance of ByteList with the contents of wrap.  If copy is true then it will
+     * array copy the contents.  Otherwise it will use the byte array passed in as its initial
+     * backing store.
+     *
+     * @param wrap the initial bytes for this ByteList
+     * @param copy whether to arraycopy wrap for the backing store or not
+     */
     public ByteList(byte[] wrap, boolean copy) {
         assert wrap != null;
         if (copy) {
@@ -100,20 +138,64 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize = wrap.length;
     }
 
+    /**
+     * Create a new instance of byte list with the same contents as the passed in ByteList wrap.
+     * Note that this does array copy the data for the new objects initial backing store.
+     *
+     * @param wrap is contents for new ByteList
+     */
     public ByteList(ByteList wrap) {
         this(wrap.bytes, wrap.begin, wrap.realSize);
     }
 
+    /**
+     * Create a new instance of ByteList with the same contents as the passed in ByteList wrap.
+     * The copy parameter gives you control over whether you want this new ByteList to share
+     * the same byte array for its backing store.
+     *
+     * ****IMPORTANT NOTES*****
+     * copy is currently ignored and always assumed false.  This constructor should just go away
+     * so it has been marked as deprecated.
+     *
+     * @param wrap
+     * @param copy
+     *
+     * Deprecated to coincide with JRuby 1.5 (not used by anything we can find luckily)
+     */
+    @Deprecated
     public ByteList(ByteList wrap, boolean copy) {
         this(wrap.bytes, wrap.begin, wrap.realSize, false);
     }
 
+    /**
+     * Create a new instance of ByteList using wrap as a backing store where index is the first
+     * index in the byte array where the data starts and len indicates how long the data portion
+     * of the bytelist is.  wrap will be array copied in this constructor.
+     *
+     * @param wrap the bytes to use
+     * @param index where in the bytes the data starts
+     * @param len how long the data is in the wrap array
+     */
     public ByteList(byte[] wrap, int index, int len) {
-        this(wrap,index,len,true);
+        this(wrap, index, len, true);
     }
 
+    /**
+     * Create a new instance of ByteList using wrap as a backing store where index is the first
+     * index in the byte array where the data starts and len indicates how long the data portion
+     * of the bytelist is.  wrap will be array copied if copy is true OR if index != 0.
+     *
+     * @param wrap the bytes to use
+     * @param index where in the bytes the data starts
+     * @param len how long the data is in the wrap array
+     * @param copy if true array copy wrap. otherwise use as backing store
+     */
+    // FIXME:  Fix the index != 0 not honoring copy and separate out into a different caller. JRuby.next would be the right time for this.
     public ByteList(byte[] wrap, int index, int len, boolean copy) {
-        assert wrap != null;
+        assert wrap != null : "'wrap' must not be null";
+        assert index >= 0 && index <= wrap.length : "'index' is not without bounds of 'wrap' array";
+        assert wrap.length >= index + len : "'index' + 'len' is longer than the 'wrap' array";
+
         if (copy || index != 0) {
             bytes = new byte[len];
             System.arraycopy(wrap, index, bytes, 0, len);
@@ -123,62 +205,61 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize = len;
     }
 
+    /**
+     * Create a new instance of ByteList using wrap as a backing store where index is the first
+     * index in the byte array where the data starts and len indicates how long the data portion
+     * of the bytelist is.  wrap's byte array will be array copied for initial backing store.
+     *
+     * @param wrap the bytes to use
+     * @param index where in the bytes the data starts
+     * @param len how long the data is in the wrap array
+     */
     public ByteList(ByteList wrap, int index, int len) {
         this(wrap.bytes, wrap.begin + index, len);
     }
 
-    private ByteList(boolean flag) {
-    }
-
+    /**
+     * Delete len bytes from start index.  This does no bullet-proofing so it is your
+     * responsibility to ensure you do not run off the backing store array.
+     *
+     * @param start index to delete from
+     * @param len number of bytes to delete
+     */
     public void delete(int start, int len) {
-        realSize-=len;
-        System.arraycopy(bytes,start+len,bytes,start,realSize);
+        assert start >= begin && start < realSize : "'start' is at invalid index";
+        assert len >= 0 : "'len' must be positive";
+        assert start + len <= begin + realSize : "too many bytes requested";
+
+        realSize -= len;
+        
+        System.arraycopy(bytes, start + len, bytes, start, realSize);
     }
 
-    public ByteList append(byte b) {
-        grow(1);
-        bytes[realSize++] = b;
-        return this;
-    }
-
-    public ByteList append(int b) {
-        append((byte)b);
-        return this;
-    }
-
-    public ByteList append(InputStream input, int length) throws IOException {
-        grow(length);
-        int read = 0;
-        int n;
-        while (read < length) {
-            n = input.read(bytes, begin + read, length - read);
-            if (n == -1) {
-                if (read == 0) throw new java.io.EOFException();
-                break;
-            }
-            read += n;
-        }
-
-        realSize += read;
-        return this;
-    }
-
-    public void append(ByteBuffer buffer, int len) {
-        grow(len);
-        buffer.get(bytes, realSize, len);
-        realSize += len;
-    }
-
+    /**
+     * Append the byte b up to len times onto the end of the current ByteList.
+     *
+     * @param b is byte to be appended
+     * @param len is number of times to repeat the append
+     */
+    // FIXME: Innefficient impl since we know the len up front.
     public void fill(int b, int len) {
         for ( ; --len >= 0; ) {
             append(b);
         }
     }
 
+    /**
+     * @see Object#clone()
+     */
+    @Override
     public Object clone() {
         return dup();
     }
 
+    /**
+     * creates a duplicate of this bytelist but only in the case of a stringValue and its resulting
+     * hash value.  No other elements are duplicated.
+     */
     public ByteList dup() {
         ByteList dup = dup(realSize);
         dup.hash = hash;
@@ -186,6 +267,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return dup;
     }
 
+    /**
+     * Create a new ByteList but do not array copy the byte backing store.
+     *
+     * @return a new ByteList with same backing store
+     */
     public ByteList shallowDup() {
         ByteList dup = new  ByteList(bytes, false);
         dup.realSize = realSize;
@@ -203,44 +289,72 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * (namely to COW with having <code>length - realSize</code> bytes ahead)
      */
     public ByteList dup(int length) {
-        ByteList dup = new ByteList(false);
-        dup.bytes = new byte[length];
-        // use the smaller of the two sizes for the new real size, to allow truncating
-        int newRealSize = Math.min(length, realSize);
-        System.arraycopy(bytes, begin, dup.bytes, 0, newRealSize);
-        dup.realSize = newRealSize;
-        dup.begin = 0;
+        ByteList dup = new ByteList(length);
+
+        dup.append(this.bytes, this.begin, this.realSize);
         dup.encoding = encoding;
+        
         return dup;
     }
 
+    /**
+     * Ensure that the bytelist is at least length bytes long.  Otherwise grow the backing store
+     * so that it is length bytes long
+     *
+     * @param length to use to make sure ByteList is long enough
+     */
     public void ensure(int length) {
         if (length >= bytes.length) {
-            byte[]tmp = new byte[length + (length >>> 1)];
+            byte[] tmp = new byte[length + (length >>> 1)];
             System.arraycopy(bytes, begin, tmp, 0, realSize);
             bytes = tmp;
         }
     }
 
+    /**
+     * Make a shared copy of this ByteList.  This is used for COW'ing ByteLists, you typically
+     * want a piece of the same backing store to be shared across ByteBuffers, while those
+     * ByteLists will be pointing at different indexes and lengths of the same backing store.
+     *
+     * Note: that this does not update hash or stringValue.
+     *
+     * @param index new begin value for shared ByteBuffer
+     * @param len new length/realSize for chared
+     * @return
+     */
     public ByteList makeShared(int index, int len) {
-        ByteList shared = new ByteList(false);
-        shared.bytes = bytes;
+        ByteList shared = new ByteList(bytes, encoding);
+
         shared.realSize = len;
         shared.begin = begin + index;
-        shared.encoding = encoding;
+
         return shared;
     }
 
+    /**
+     * Change ByteBuffer to have a new begin that is +index positions past begin with a new length.
+     *
+     * @param index new value to add to begin
+     * @param len the new realSize/length value
+     */
     public void view(int index, int len) {
         realSize = len;
         begin = begin + index;
     }
 
+    /**
+     * Array copy the byte backing store so that you can guarantee that no other objects are
+     * referencing this objects backing store.
+     */
     public void unshare() {
         unshare(realSize);
     }
 
     /**
+     * Array copy the byte backing store so that you can guarantee that no other objects are
+     * referencing this objects backing store.  This version on unshare allows a length to be
+     * specified which will copy length bytes from the old backing store.
+     *
      * @param length is the value of how big the buffer is going to be, not the actual length to copy
      *
      * It is used by RubyString.modify(int) to prevent COW pathological situations
@@ -253,11 +367,19 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         begin = 0;
     }
 
+    /**
+     * Invalidate the hash and stringValue which may have been cached in this ByteList.
+     */
     public void invalidate() {
         hash = 0;
         stringValue = null;
     }
 
+    /**
+     * Prepend a byte onto the front of this ByteList.
+     *
+     * @param b is the byte to be prepended
+     */
     public void prepend(byte b) {
         grow(1);
         System.arraycopy(bytes, 0, bytes, 1, realSize);
@@ -265,57 +387,211 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize++;
     }
 
+    /**
+     * Append a single byte to the ByteList
+     *
+     * @param b the byte to be added
+     * @return this instance
+     */
+    public ByteList append(byte b) {
+        grow(1);
+        bytes[realSize++] = b;
+        return this;
+    }
+
+    /**
+     * Append a single int to the ByteList
+     *
+     * @param b the int to be added
+     * @return this instance
+     */
+    public ByteList append(int b) {
+        append((byte)b);
+        return this;
+    }
+
+    /**
+     * Append up to length bytes from InputStream to the ByteList.   If no bytes are read from the
+     * stream then throw an IOException.
+     *
+     * @param input the stream to read bytes from
+     * @param length how many byte to try and read
+     * @return this instance
+     * @throws IOException when no bytes are read
+     */
+    public ByteList append(InputStream input, int length) throws IOException {
+        grow(length);
+        int read = 0;
+        int n;
+        while (read < length) {
+            n = input.read(bytes, begin + read, length - read);
+            if (n == -1) {
+                if (read == 0) throw new java.io.EOFException();
+                break;
+            }
+            read += n;
+        }
+
+        realSize += read;
+        return this;
+    }
+
+    /**
+     * Append contents of the supplied nio ByteList up to len length onto the end of this
+     * ByteBuffer.
+     *
+     * @param buffer to be appended
+     * @param len is number of bytes you hoping to get from the ByteBuffer
+     */
+    public void append(ByteBuffer buffer, int len) {
+        grow(len);
+        buffer.get(bytes, realSize, len);
+        realSize += len;
+    }
+
+    /**
+     * Append moreBytes onto the end of the current ByteList.
+     *
+     * @param moreBytes to be added.
+     */
     public void append(byte[] moreBytes) {
+        assert moreBytes != null : "moreBytes is null";
+
         grow(moreBytes.length);
         System.arraycopy(moreBytes, 0, bytes, realSize, moreBytes.length);
         realSize += moreBytes.length;
     }
 
+    /**
+     * Append moreBytes onto the end of the current ByteList.
+     *
+     * @param moreBytes to be added.
+     */
     public void append(ByteList moreBytes) {
         append(moreBytes.bytes, moreBytes.begin, moreBytes.realSize);
     }
 
+    /**
+     * Append moreBytes onto the end of the current ByteList with +index as the new begin for
+     * len bytes from the moreBytes ByteList.
+     *
+     * @param moreBytes to be added.
+     * @param index new index past current begin value
+     * @param len is the number of bytes to append from source ByteList
+     */
     public void append(ByteList moreBytes, int index, int len) {
         append(moreBytes.bytes, moreBytes.begin + index, len);
     }
 
+    /**
+     * Append moreBytes onto the end of the current ByteList with start as the new begin for
+     * len bytes from the moreBytes byte array.
+     *
+     * @param moreBytes to be added.
+     * @param start is the new begin value
+     * @param len is the number of bytes to append from source byte array
+     */
     public void append(byte[] moreBytes, int start, int len) {
+        assert moreBytes != null : "moreBytes is null";
+        assert start >= 0 && (start == 0 || start < moreBytes.length) : "Invalid start";
+        assert len >= 0 && moreBytes.length - start >= len : "Bad length";
+
         grow(len);
         System.arraycopy(moreBytes, start, bytes, realSize, len);
         realSize += len;
     }
 
+    /**
+     * Resize the ByteList's backing store to be length in size.  Note that this forces the backing
+     * store to array copy regardless of ByteLists current size or contents.  It essentially will
+     * end any COWing.
+     *
+     * @param length the new length for the backing store.
+     */
     public void realloc(int length) {
+        assert length >= 0 : "Invalid length";
+        assert length >= realSize : "length is too small";
+        
         byte tmp[] = new byte[length];
         System.arraycopy(bytes, 0, tmp, 0, realSize);
         bytes = tmp;
     }
 
+    /**
+     * Return the current length of the ByteList.
+     *
+     * @return the number of bytes in this ByteList.
+     */
     public int length() {
         return realSize;
     }
 
-    public int lengthEnc() {
-        return encoding.strLength(bytes, begin, begin + realSize);
-    }
-
+    // ENEBO: Wow...what happens if newLength < realSize...nasty shrinkage?
+    /**
+     * grow the bytelist to be newLength in size.
+     *
+     * @param newLength
+     */
     public void length(int newLength) {
+//        assert newLength >= realSize : "newLength is too small";
+        
         grow(newLength - realSize);
         realSize = newLength;
     }
 
+    /**
+     * Number of characters in this ByteList based on its current encoding.
+     *
+     * @return number of characters
+     */
+    public int lengthEnc() {
+        return encoding.strLength(bytes, begin, begin + realSize);
+    }
+
+    /**
+     * Get the byte at index from the ByteList.
+     *
+     * @param index to retreive byte from
+     * @return the byte retreived
+     */
     public int get(int index) {
+        assert index >= 0 : "index must be positive";
+        
         return bytes[begin + index];
     }
 
+    /**
+     *  Get the index code point in this ByteList.
+     *
+     * @param index is the element you want
+     * @return the element you requested
+     */
     public int getEnc(int index) {
         return encoding.strCodeAt(bytes, begin, begin + realSize, index);
     }
 
+    /**
+     * Set the byte at index to be new value.
+     *
+     * @param index to set byte
+     * @param b is the new value.
+     */
     public void set(int index, int b) {
+        assert index >= 0 : "index must be positive";
+        assert begin + index < begin + realSize : "index is too large";
+        
         bytes[begin + index] = (byte)b;
     }
 
+    /**
+     * Replace the byte array backing store with newBytes.  This method is only referred to in
+     * deprecated method RubyString.view(CharSequence).
+     *
+     * We deprecated this method because it ignore begin and if we
+     *
+     * @param newBytes
+     */
+    @Deprecated
     public void replace(byte[] newBytes) {
         assert newBytes != null;
         this.bytes = newBytes;
@@ -350,14 +626,35 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize = newSize;
     }
 
+    /**
+     * Note: This is as unsafe as unsafeReplace
+     *
+     * @param beg
+     * @param len
+     * @param nbytes
+     */
     public void replace(int beg, int len, ByteList nbytes) {
         replace(beg, len, nbytes.bytes, nbytes.begin, nbytes.realSize);
     }
 
+    /**
+     * Note: This is as unsafe as unsafeReplace
+     * @param beg
+     * @param len
+     * @param buf
+     */
     public void replace(int beg, int len, byte[] buf) {
         replace(beg, len, buf, 0, buf.length);
     }
 
+    /**
+     * Note: This is as unsafe as unsafeReplace
+     * @param beg
+     * @param len
+     * @param nbytes
+     * @param index
+     * @param count
+     */
     public void replace(int beg, int len, byte[] nbytes, int index, int count) {
         unsafeReplace(beg, len, nbytes, index, count);
     }
@@ -369,10 +666,23 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize++;
     }
 
+    /**
+     * Get the index of first occurrence of c in ByteList from the beginning of the ByteList.
+     *
+     * @param c byte to be looking for
+     * @return the index of the byte or -1 if not found
+     */
     public int indexOf(int c) {
         return indexOf(c, 0);
     }
 
+    /**
+     * Get the index of first occurrence of c in ByteList from the pos offset of the ByteList.
+     *
+     * @param c byte to be looking for
+     * @param pos off set from beginning of ByteList to look for byte
+     * @return the index of the byte or -1 if not found
+     */
     public int indexOf(final int c, int pos) {
         // not sure if this is checked elsewhere,
         // didn't see it in RubyString. RubyString does
@@ -387,14 +697,33 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return pos < size ? pos - begin : -1;
     }
 
+    /**
+     * Get the index of first occurrence of Bytelist find in this ByteList.
+     *
+     * @param find the ByteList to find
+     * @return the index of the byte or -1 if not found
+     */
     public int indexOf(ByteList find) {
         return indexOf(find, 0);
     }
 
+    /**
+     * Get the index of first occurrence of Bytelist find in this ByteList starting at index i.
+     *
+     * @param find the ByteList to find
+     * @param i the index to start from
+     * @return the index of the byte or -1 if not found
+     */
     public int indexOf(ByteList find, int i) {
         return indexOf(bytes, begin, realSize, find.bytes, find.begin, find.realSize, i);
     }
 
+    /**
+     * Get the index of first occurrence of target in source using the offset and count parameters.
+     * fromIndex can be used to start beyond zero on source.
+     *
+     * @return the index of the byte or -1 if not found
+     */
     static int indexOf(byte[] source, int sourceOffset, int sourceCount, byte[] target, int targetOffset, int targetCount, int fromIndex) {
         if (fromIndex >= sourceCount) return (targetCount == 0 ? sourceCount : -1);
         if (fromIndex < 0) fromIndex = 0;
@@ -417,16 +746,29 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return -1;
     }
 
+    /**
+     * Get the index of last occurrence of c in ByteList from the end of the ByteList.
+     *
+     * @param c byte to be looking for
+     * @return the index of the byte or -1 if not found
+     */
     public int lastIndexOf(int c) {
         return lastIndexOf(c, realSize - 1);
     }
 
+    /**
+     * Get the index of last occurrence of c in ByteList from the pos offset of the ByteList.
+     *
+     * @param c byte to be looking for
+     * @param pos off set from end of ByteList to look for byte
+     * @return the index of the byte or -1 if not found
+     */
     public int lastIndexOf(final int c, int pos) {
         // not sure if this is checked elsewhere,
         // didn't see it in RubyString. RubyString does
         // cast to char, so c will be >= 0.
-        if (c > 255)
-            return -1;
+        if (c > 255) return -1;
+        
         final byte b = (byte)(c&0xFF);
         final int size = begin + realSize;
         pos += begin;
@@ -440,14 +782,33 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return pos - begin;
     }
 
+    /**
+     * Get the index of last occurrence of find in ByteList from the end of the ByteList.
+     *
+     * @param find ByteList to be looking for
+     * @return the index of the byte or -1 if not found
+     */
     public int lastIndexOf(ByteList find) {
         return lastIndexOf(find, realSize);
     }
 
+    /**
+     * Get the index of last occurrence of find in ByteList from the end of the ByteList.
+     *
+     * @param find ByteList to be looking for
+     * @param pos index from end of list to search from
+     * @return the index of the byte or -1 if not found
+     */
     public int lastIndexOf(ByteList find, int pos) {
         return lastIndexOf(bytes, begin, realSize, find.bytes, find.begin, find.realSize, pos);
     }
 
+    /**
+     * Get the index of last occurrence of target in source using the offset and count parameters.
+     * fromIndex can be used to start beyond zero on source.
+     *
+     * @return the index of the byte or -1 if not found
+     */
     static int lastIndexOf(byte[] source, int sourceOffset, int sourceCount, byte[] target, int targetOffset, int targetCount, int fromIndex) {
         int rightIndex = sourceCount - targetCount;
         if (fromIndex < 0) return -1;
@@ -490,19 +851,44 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return true;
     }
 
+    /**
+     * Does this ByteList start with the supplied ByteList?
+     *
+     * @param other is the bytelist to compare with
+     * @return true is this ByteList starts with other
+     */
     public boolean startsWith(ByteList other) {
         return startsWith(other, 0);
     }
 
+    /**
+     * Does this ByteList end with the supplied ByteList?
+     *
+     * @param other is the bytelist to compare with
+     * @return true is this ByteList starts with other
+     */
     public boolean endsWith(ByteList other) {
         return startsWith(other, realSize - other.realSize);
     }
 
+    /**
+     * Does this ByteList equal the other ByteList?
+     *
+     * @param other is the bytelist to compare with
+     * @return true is this ByteList is the same
+     */
+    @Override
     public boolean equals(Object other) {
         if (other instanceof ByteList) return equal((ByteList)other);
         return false;
     }
 
+    /**
+     * Does this ByteList equal the other ByteList?
+     *
+     * @param other is the bytelist to compare with
+     * @return true is this ByteList is the same
+     */
     public boolean equal(ByteList other) {
         if (other == this) return true;
         if (hash != 0 && other.hash != 0 && hash != other.hash) return false;
@@ -527,10 +913,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return false;
     }
 
-    // an alternative to the new version of equals, should
-    // detect inequality faster (in many cases), but is slow
-    // in the case of equal values (all bytes visited), due to
-    // using n+=2, n-=2 vs. ++n, --n while iterating over the array.
+    /**
+     * an alternative to the new version of equals, should
+     * detect inequality faster (in many cases), but is slow
+     * in the case of equal values (all bytes visited), due to
+     * using n+=2, n-=2 vs. ++n, --n while iterating over the array.
+     */
     public boolean sample_equals(Object other) {
         if (other == this) return true;
         if (other instanceof ByteList) {
@@ -561,6 +949,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return cmp((ByteList)other);
     }
 
+    /**
+     * This comparison matches MRI comparison of Strings (rb_str_cmp).
+     */
     public int cmp(final ByteList other) {
         if (other == this) return 0;
         final int size = realSize;
@@ -579,6 +970,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return size == other.realSize ? 0 : size == len ? -1 : 1;
     }
 
+    /**
+     * Do a case insensitive comparison with other ByteList with return types similiar to compareTo.
+     *
+     * @param other the ByteList to compare
+     * @return -1, 0, or 1
+     */
     public int caseInsensitiveCmp(final ByteList other) {
         if (other == this) return 0;
 
@@ -610,16 +1007,34 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return bytes;
     }
 
+    /**
+     * Get a copy of the bytes referenced by this ByteList.  It will make an optimal copy and not
+     * carry along unused bytes from COW sharing.
+     *
+     * @return a copy of the bytes.
+     */
     public byte[] bytes() {
         byte[] newBytes = new byte[realSize];
         System.arraycopy(bytes, begin, newBytes, 0, realSize);
         return newBytes;
     }
 
+    /**
+     * First index of the backing array that contains data for the ByteList.  Note that we have
+     * copy-on-write (COW) semantics which means sharing the same backing store will yield different
+     * begin and size values while using the same byte[].
+     *
+     * @return the index
+     */
     public int begin() {
         return begin;
     }
 
+    /**
+     * Grow the ByteList by increaseRequested bytes.  A value <0 will be a no-op.
+     *
+     * @param increaseRequested number of bytes to grow
+     */
     private void grow(int increaseRequested) {
         if (increaseRequested < 0) return;
 
@@ -631,6 +1046,10 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         }
     }
 
+    /**
+     * @see Object#hashCode()
+     */
+    @Override
     public int hashCode() {
         if (hash != 0) return hash;
 
@@ -650,6 +1069,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      *
      * @return an ISO-8859-1 representation of the byte list
      */
+    @Override
     public String toString() {
         if (stringValue == null) {
             stringValue = decode(bytes, begin, realSize, "ISO-8859-1");
@@ -657,14 +1077,26 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return stringValue;
     }
 
+    /**
+     * Create a bytelist with ISO_8859_1 encoding from the provided CharSequence.
+     *
+     * @param s the source for new ByteList
+     * @return the new ByteList
+     */
     public static ByteList create(CharSequence s) {
         return new ByteList(plain(s),false);
     }
 
+    /**
+     * Create a byte[] from a CharSequence assuming a raw/ISO-8859-1 encoding
+     *
+     * @param s the CharSequence to convert
+     * @return a byte[]
+     */
     public static byte[] plain(CharSequence s) {
-        if (s instanceof String) {
-            return encode(s, "ISO-8859-1");
-        }
+        if (s instanceof String) return encode(s, "ISO-8859-1");
+
+        // Not a String...get it the slow way
         byte[] bytes = new byte[s.length()];
         for (int i = 0; i < bytes.length; i++) {
             bytes[i] = (byte) s.charAt(i);
@@ -672,6 +1104,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return bytes;
     }
 
+    /**
+     * Create a byte[] from a char[] assuming a raw/ISO-8859-1 encoding
+     *
+     * @param s the CharSequence to convert
+     * @return a byte[]
+     */
     public static byte[] plain(char[] s) {
         byte[] bytes = new byte[s.length];
         for (int i = 0; i < s.length; i++) {
@@ -680,7 +1118,18 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return bytes;
     }
 
+    /**
+     * Create a char[] from a byte[] assuming a raw/ISO-8859-1 encoding
+     *
+     * @param b the source byte[]
+     * @param start index to start converting to char's
+     * @param length how many bytes to convert to char's
+     * @return a byte[]
+     */
     public static char[] plain(byte[] b, int start, int length) {
+        assert b != null : "byte array cannot be null";
+        assert start >= 0 && start + length <= b.length : "Invalid start or start+length too long";
+
         char[] chars = new char[length];
         for (int i = 0; i < length; i++) {
             chars[i] = (char) (b[start + i] & 0xFF);
@@ -688,7 +1137,15 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return chars;
     }
 
+    /**
+     * Create a char[] from a byte[] assuming a raw/ISO-8859-1 encoding
+     *
+     * @param b the source byte[]
+     * @return a byte[]
+     */
     public static char[] plain(byte[] b) {
+        assert b != null : "byte array cannot be null";
+        
         char[] chars = new char[b.length];
         for (int i = 0; i < b.length; i++) {
             chars[i] = (char) (b[i] & 0xFF);
@@ -701,19 +1158,39 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     private static final ConcurrentMap<String,Charset> charsetsByAlias =
         new ConcurrentHashMap<String,Charset>();
 
+    /**
+     * Decode byte data into a String with the supplied charsetName.
+     *
+     * @param data to be decoded
+     * @param offset where to start decoding from in data
+     * @param length how many bytes to decode from data
+     * @param charsetName used to make the resulting String
+     * @return the new String
+     */
     public static String decode(byte[] data, int offset, int length, String charsetName) {
-        Charset cs = lookup(charsetName);
-        return cs.decode(ByteBuffer.wrap(data, offset, length)).toString();
+        return lookup(charsetName).decode(ByteBuffer.wrap(data, offset, length)).toString();
     }
 
+    /**
+     * Decode byte data into a String with the supplied charsetName.
+     *
+     * @param data to be decoded
+     * @param charsetName used to make the resulting String
+     * @return the new String
+     */
     public static String decode(byte[] data, String charsetName) {
-        Charset cs = lookup(charsetName);
-        return cs.decode(ByteBuffer.wrap(data)).toString();
+        return lookup(charsetName).decode(ByteBuffer.wrap(data)).toString();
     }
 
+    /**
+     * Encode CharSequence into a set of bytes based on the charsetName.
+     *
+     * @param data to be encoded
+     * @param charsetName used to extract the resulting bytes
+     * @return the new byte[]
+     */
     public static byte[] encode(CharSequence data, String charsetName) {
-        Charset cs = lookup(charsetName);
-        return cs.encode(CharBuffer.wrap(data)).array();
+        return lookup(charsetName).encode(CharBuffer.wrap(data)).array();
     }
 
     private static Charset lookup(String alias) {
@@ -725,14 +1202,34 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         return cs;
     }
 
+    /**
+     * Pretend byte array is raw and each byte is also the character value
+     *
+     * @param ix is the index you want
+     * @return
+     */
     public char charAt(int ix) {
         return (char)(this.bytes[begin + ix] & 0xFF);
     }
 
+    /**
+     * Create subSequence of this array between start and end offsets
+     *
+     * @param start index for beginning of subsequence
+     * @param end index for end of subsequence
+     * @return a new ByteList/CharSequence
+     */
     public CharSequence subSequence(int start, int end) {
         return new ByteList(this, start, end - start);
     }
 
+    /**
+     * Are these two byte arrays similiar (semantics similiar too compareTo).  This is slightly
+     * special in that it will only compare the same number of bytes based on the lesser of the two
+     * lengths.
+     *
+     * @return -1, 0, 1
+     */
     public static int memcmp(final byte[] first, final int firstStart, final int firstLen, final byte[] second, final int secondStart, final int secondLen) {
         if (first == second) return 0;
         final int len =  Math.min(firstLen,secondLen);
@@ -745,6 +1242,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     }
 
+    /**
+     * Are these two byte arrays similiar (semantics similiar too compareTo).
+     *
+     * @return -1, 0, 1
+     */
     public static int memcmp(final byte[] first, final int firstStart, final byte[] second, final int secondStart, final int len) {
         if (first == second) return 0;
         int offset = -1;
