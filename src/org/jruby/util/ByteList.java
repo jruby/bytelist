@@ -129,6 +129,19 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param copy whether to arraycopy wrap for the backing store or not
      */
     public ByteList(byte[] wrap, boolean copy) {
+        this(wrap, ASCIIEncoding.INSTANCE, copy);
+    }
+
+    /**
+     * Create a new instance of ByteList with the contents of wrap.  If copy is true then it will
+     * array copy the contents.  Otherwise it will use the byte array passed in as its initial
+     * backing store.
+     *
+     * @param wrap the initial bytes for this ByteList
+     * @param encoding the encoding for the bytes
+     * @param copy whether to arraycopy wrap for the backing store or not
+     */
+    public ByteList(byte[] wrap, Encoding encoding, boolean copy) {
         assert wrap != null;
         if (copy) {
             bytes = (byte[])wrap.clone();
@@ -188,10 +201,26 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param wrap the bytes to use
      * @param index where in the bytes the data starts
      * @param len how long the data is in the wrap array
+     * @param encoding the encoding of the bytes
      * @param copy if true array copy wrap. otherwise use as backing store
      */
     // FIXME:  Fix the index != 0 not honoring copy and separate out into a different caller. JRuby.next would be the right time for this.
     public ByteList(byte[] wrap, int index, int len, boolean copy) {
+        this(wrap, index, len, ASCIIEncoding.INSTANCE, copy);
+    }
+
+    /**
+     * Create a new instance of ByteList using wrap as a backing store where index is the first
+     * index in the byte array where the data starts and len indicates how long the data portion
+     * of the bytelist is.  wrap will be array copied if copy is true OR if index != 0.
+     *
+     * @param wrap the bytes to use
+     * @param index where in the bytes the data starts
+     * @param len how long the data is in the wrap array
+     * @param copy if true array copy wrap. otherwise use as backing store
+     */
+    // FIXME:  Fix the index != 0 not honoring copy and separate out into a different caller. JRuby.next would be the right time for this.
+    public ByteList(byte[] wrap, int index, int len, Encoding encoding, boolean copy) {
         assert wrap != null : "'wrap' must not be null";
         assert index >= 0 && index <= wrap.length : "'index' is not without bounds of 'wrap' array";
         assert wrap.length >= index + len : "'index' + 'len' is longer than the 'wrap' array";
@@ -203,6 +232,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             bytes = wrap;
         }
         realSize = len;
+        this.encoding = encoding;
     }
 
     /**
