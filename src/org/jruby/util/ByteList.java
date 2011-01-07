@@ -144,11 +144,12 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public ByteList(byte[] wrap, Encoding encoding, boolean copy) {
         assert wrap != null;
         if (copy) {
-            bytes = (byte[])wrap.clone();
+            this.bytes = (byte[])wrap.clone();
         } else {
-            bytes = wrap;
+            this.bytes = wrap;
         }
-        realSize = wrap.length;
+        this.realSize = wrap.length;
+        this.encoding = encoding;
     }
 
     /**
@@ -158,7 +159,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param wrap is contents for new ByteList
      */
     public ByteList(ByteList wrap) {
-        this(wrap.bytes, wrap.begin, wrap.realSize);
+        this(wrap.bytes, wrap.begin, wrap.realSize, wrap.encoding, true);
     }
 
     /**
@@ -177,7 +178,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     @Deprecated
     public ByteList(ByteList wrap, boolean copy) {
-        this(wrap.bytes, wrap.begin, wrap.realSize, false);
+        this(wrap.bytes, wrap.begin, wrap.realSize, wrap.encoding, false);
     }
 
     /**

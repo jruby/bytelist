@@ -30,6 +30,7 @@ package org.jruby.util;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import org.jcodings.specific.UTF8Encoding;
 
 import junit.framework.TestCase;
 
@@ -311,5 +312,25 @@ public class ByteListTest extends TestCase {
 
         assertFalse(blank.startsWith(str));
         assertFalse(blankAndZeroLength.startsWith(str));
+    }
+    
+    public void testConstructorsSetEncoding() {
+        ByteList utf8 = new ByteList(new byte[0], UTF8Encoding.INSTANCE);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(new byte[0], UTF8Encoding.INSTANCE, false);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(new byte[0], UTF8Encoding.INSTANCE, true);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(new byte[0], 0, 0, UTF8Encoding.INSTANCE, false);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(new byte[0], 0, 0, UTF8Encoding.INSTANCE, true);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        
+        utf8 = new ByteList(utf8);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(utf8, false);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+        utf8 = new ByteList(utf8, true);
+        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
     }
 }
