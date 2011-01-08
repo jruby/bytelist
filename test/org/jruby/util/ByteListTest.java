@@ -31,6 +31,7 @@ package org.jruby.util;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import org.jcodings.specific.UTF8Encoding;
+import org.jcodings.specific.ASCIIEncoding;
 
 import junit.framework.TestCase;
 
@@ -332,5 +333,18 @@ public class ByteListTest extends TestCase {
         assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
         utf8 = new ByteList(utf8, true);
         assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
+    }
+
+    public void testEncodingCantBeNull() {
+        ByteList bl = new ByteList(new byte[0], null);
+        assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
+        bl = new ByteList(new byte[0], null, false);
+        assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
+        bl = new ByteList(new byte[0], null, true);
+        assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
+        bl = new ByteList(new byte[0], 0, 0, null, false);
+        assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
+        bl = new ByteList(new byte[0], 0, 0, null, true);
+        assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
     }
 }

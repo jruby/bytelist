@@ -107,7 +107,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public ByteList(byte[] bytes, Encoding encoding) {
         this.bytes = bytes;
         this.realSize = bytes.length;
-        this.encoding = encoding;
+        this.encoding = safeEncoding(encoding);
     }
 
     /**
@@ -149,7 +149,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             this.bytes = wrap;
         }
         this.realSize = wrap.length;
-        this.encoding = encoding;
+        this.encoding = safeEncoding(encoding);
     }
 
     /**
@@ -233,7 +233,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             bytes = wrap;
         }
         realSize = len;
-        this.encoding = encoding;
+        this.encoding = safeEncoding(encoding);
     }
 
     /**
@@ -307,7 +307,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         ByteList dup = new  ByteList(bytes, false);
         dup.realSize = realSize;
         dup.begin = begin;
-        dup.encoding = encoding;
+        dup.encoding = safeEncoding(encoding);
         dup.hash = hash;
         dup.stringValue = stringValue;
         return dup;
@@ -323,7 +323,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         ByteList dup = new ByteList(length);
 
         dup.append(this.bytes, this.begin, this.realSize);
-        dup.encoding = encoding;
+        dup.encoding = safeEncoding(encoding);
         
         return dup;
     }
@@ -1348,6 +1348,14 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public final void setEncoding(Encoding encoding) {
         assert encoding != null;
-        this.encoding = encoding;
+        this.encoding = safeEncoding(encoding);
+    }
+
+    /**
+     * Ensure the encoding is always non-null.
+     */
+    public static Encoding safeEncoding(Encoding incoming) {
+        if (incoming == null) return ASCIIEncoding.INSTANCE;
+        return incoming;
     }
 }
