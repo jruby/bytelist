@@ -220,16 +220,16 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param len how long the data is in the wrap array
      * @param copy if true array copy wrap. otherwise use as backing store
      */
-    // FIXME:  Fix the index != 0 not honoring copy and separate out into a different caller. JRuby.next would be the right time for this.
     public ByteList(byte[] wrap, int index, int len, Encoding encoding, boolean copy) {
         assert wrap != null : "'wrap' must not be null";
         assert index >= 0 && index <= wrap.length : "'index' is not without bounds of 'wrap' array";
         assert wrap.length >= index + len : "'index' + 'len' is longer than the 'wrap' array";
 
-        if (copy || index != 0) {
+        if (copy) {
             bytes = new byte[len];
             System.arraycopy(wrap, index, bytes, 0, len);
         } else {
+            begin = index;
             bytes = wrap;
         }
         realSize = len;
@@ -413,8 +413,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public void prepend(byte b) {
         grow(1);
-        System.arraycopy(bytes, 0, bytes, 1, realSize);
-        bytes[0] = b;
+        System.arraycopy(bytes, begin + 0, bytes, begin + 1, realSize);
+        bytes[begin + 0] = b;
         realSize++;
     }
 
@@ -426,7 +426,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList append(byte b) {
         grow(1);
-        bytes[realSize++] = b;
+        bytes[begin + realSize] = b;
+        realSize++;
         return this;
     }
 
@@ -454,8 +455,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         grow(length);
         int read = 0;
         int n;
+        int start = begin + realSize;
         while (read < length) {
-            n = input.read(bytes, begin + read, length - read);
+            n = input.read(bytes, start + read, length - read);
             if (n == -1) {
                 if (read == 0) throw new java.io.EOFException();
                 break;
@@ -476,7 +478,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public void append(ByteBuffer buffer, int len) {
         grow(len);
-        buffer.get(bytes, realSize, len);
+        buffer.get(bytes, begin + realSize, len);
         realSize += len;
     }
 
@@ -489,7 +491,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert moreBytes != null : "moreBytes is null";
 
         grow(moreBytes.length);
-        System.arraycopy(moreBytes, 0, bytes, realSize, moreBytes.length);
+        System.arraycopy(moreBytes, 0, bytes, begin + realSize, moreBytes.length);
         realSize += moreBytes.length;
     }
 
@@ -529,7 +531,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert len >= 0 && moreBytes.length - start >= len : "Bad length";
 
         grow(len);
-        System.arraycopy(moreBytes, start, bytes, realSize, len);
+        System.arraycopy(moreBytes, start, bytes, begin + realSize, len);
         realSize += len;
     }
 
@@ -1070,11 +1072,15 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     private void grow(int increaseRequested) {
         if (increaseRequested < 0) return;
 
+        // new available size
         int newSize = realSize + increaseRequested;
-        if (newSize > bytes.length) {
+
+        // only recopy if bytes does not have enough room *after* the begin index
+        if (newSize > bytes.length - begin) {
             byte[] newBytes = new byte[newSize + (newSize >> 1)];
-            if (bytes.length != 0) System.arraycopy(bytes, 0, newBytes, 0, realSize);
+            if (bytes.length != 0) System.arraycopy(bytes, begin, newBytes, 0, realSize);
             bytes = newBytes;
+            begin = 0;
         }
     }
 

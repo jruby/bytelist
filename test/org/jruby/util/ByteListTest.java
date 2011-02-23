@@ -135,6 +135,94 @@ public class ByteListTest extends TestCase {
         assertEquals(0x04, b.get(3));
     }
 
+    public void testByteListAppendSingleByteWithSubrangeOfInitialBytes() {
+        byte[] bytes = new byte[] {6,7,8,9,10};
+        ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
+
+        for (int i = 0; i < bytes.length; i++) {
+            b.append(bytes[i]);
+        }
+
+        assertEquals(9, b.length());
+        assertEquals(2, b.get(0));
+        assertEquals(3, b.get(1));
+        assertEquals(4, b.get(2));
+        assertEquals(5, b.get(3));
+        assertEquals(6, b.get(4));
+        assertEquals(7, b.get(5));
+        assertEquals(8, b.get(6));
+        assertEquals(9, b.get(7));
+        assertEquals(10, b.get(8));
+    }
+
+    public void testByteListAppendSingleIntTruncatesWithSubrangeOfInitialBytes() {
+        int[] ints = new int[] { 0x1006, 0x1007, 0x1008 };
+
+        ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
+        for (int i = 0; i < ints.length; i++) {
+            b.append(ints[i]);
+        }
+
+        assertEquals(7, b.length());
+        assertEquals(2, b.get(0));
+        assertEquals(3, b.get(1));
+        assertEquals(4, b.get(2));
+        assertEquals(5, b.get(3));
+        assertEquals(6, b.get(4));
+        assertEquals(7, b.get(5));
+        assertEquals(8, b.get(6));
+    }
+
+    public void testByteListPrependSingleByteWithSubrangeOfInitialBytes() {
+        byte[] bytes = new byte[] {6, 7, 8};
+        ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
+
+        for (int i = 0; i < bytes.length; i++) {
+            b.prepend(bytes[i]);
+        }
+
+        assertEquals(7, b.length());
+        assertEquals(8, b.get(0));
+        assertEquals(7, b.get(1));
+        assertEquals(6, b.get(2));
+        assertEquals(2, b.get(3));
+        assertEquals(3, b.get(4));
+        assertEquals(4, b.get(5));
+        assertEquals(5, b.get(6));
+    }
+
+    public void testByteListAppendArrayWithSubrangeOfInitialBytes() {
+        ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
+
+        b.append(new byte[] {6, 7, 8, 9, 10});
+
+        assertEquals(9, b.length());
+        assertEquals(2, b.get(0));
+        assertEquals(3, b.get(1));
+        assertEquals(4, b.get(2));
+        assertEquals(5, b.get(3));
+        assertEquals(6, b.get(4));
+        assertEquals(7, b.get(5));
+        assertEquals(8, b.get(6));
+        assertEquals(9, b.get(7));
+        assertEquals(10, b.get(8));
+    }
+
+    public void testByteListAppendArrayIndexLengthWithSubrangeOfInitialBytes() {
+        ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
+
+        b.append(new byte[] {6, 7, 8, 9, 10}, 1, 4);
+        assertEquals(8, b.length());
+        assertEquals(2, b.get(0));
+        assertEquals(3, b.get(1));
+        assertEquals(4, b.get(2));
+        assertEquals(5, b.get(3));
+        assertEquals(7, b.get(4));
+        assertEquals(8, b.get(5));
+        assertEquals(9, b.get(6));
+        assertEquals(10, b.get(7));
+    }
+
     public void testLengthExpandFillsWithZeros() {
         ByteList b = new ByteList();
         b.length(10);
