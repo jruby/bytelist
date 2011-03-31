@@ -335,7 +335,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param length to use to make sure ByteList is long enough
      */
     public void ensure(int length) {
-        if (length >= bytes.length) {
+        if (length > bytes.length) {
             byte[] tmp = new byte[length + (length >>> 1)];
             System.arraycopy(bytes, begin, tmp, 0, realSize);
             bytes = tmp;

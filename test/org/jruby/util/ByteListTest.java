@@ -435,4 +435,13 @@ public class ByteListTest extends TestCase {
         bl = new ByteList(new byte[0], 0, 0, null, true);
         assertEquals(ASCIIEncoding.INSTANCE, bl.getEncoding());
     }
+
+    public void testEnsureSameSize() {
+		ByteList bl = new ByteList(50);
+		byte[] bytes = bl.unsafeBytes();
+		assertEquals(50, bytes.length);
+		bl.ensure(50);
+		assertEquals(bytes, bl.unsafeBytes());
+		assertEquals(50, bl.unsafeBytes().length);
+	}
 }
