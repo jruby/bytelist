@@ -264,6 +264,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         realSize -= len;
         
         System.arraycopy(bytes, start + len, bytes, start, realSize);
+        invalidate();
     }
 
     /**
@@ -277,6 +278,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         for ( ; --len >= 0; ) {
             append(b);
         }
+        invalidate();
     }
 
     /**
@@ -339,6 +341,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             byte[] tmp = new byte[length + (length >>> 1)];
             System.arraycopy(bytes, begin, tmp, 0, realSize);
             bytes = tmp;
+            invalidate();
         }
     }
 
@@ -371,6 +374,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public void view(int index, int len) {
         realSize = len;
         begin = begin + index;
+        invalidate();
     }
 
     /**
@@ -416,6 +420,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         System.arraycopy(bytes, begin + 0, bytes, begin + 1, realSize);
         bytes[begin + 0] = b;
         realSize++;
+        invalidate();
     }
 
     /**
@@ -428,6 +433,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         grow(1);
         bytes[begin + realSize] = b;
         realSize++;
+        invalidate();
         return this;
     }
 
@@ -466,6 +472,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         }
 
         realSize += read;
+        invalidate();
         return this;
     }
 
@@ -480,6 +487,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         grow(len);
         buffer.get(bytes, begin + realSize, len);
         realSize += len;
+        invalidate();
     }
 
     /**
@@ -493,6 +501,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         grow(moreBytes.length);
         System.arraycopy(moreBytes, 0, bytes, begin + realSize, moreBytes.length);
         realSize += moreBytes.length;
+        invalidate();
     }
 
     /**
@@ -533,6 +542,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         grow(len);
         System.arraycopy(moreBytes, start, bytes, begin + realSize, len);
         realSize += len;
+        invalidate();
     }
 
     /**
@@ -549,6 +559,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         byte tmp[] = new byte[length];
         System.arraycopy(bytes, 0, tmp, 0, realSize);
         bytes = tmp;
+        invalidate();
     }
 
     /**
@@ -615,6 +626,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert begin + index < begin + realSize : "index is too large";
         
         bytes[begin + index] = (byte)b;
+        invalidate();
     }
 
     /**
@@ -630,6 +642,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert newBytes != null;
         this.bytes = newBytes;
         realSize = newBytes.length;
+        invalidate();
     }
 
     /**
@@ -658,6 +671,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         System.arraycopy(bytes,beg+len,bytes,beg+count,realSize - (len+beg));
         System.arraycopy(nbytes,index,bytes,beg,count);
         realSize = newSize;
+        invalidate();
     }
 
     /**
@@ -698,6 +712,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         System.arraycopy(bytes, index, bytes, index + 1, realSize - index);
         bytes[index] = (byte)b;
         realSize++;
+        invalidate();
     }
 
     /**
@@ -1310,6 +1325,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public final void setUnsafeBytes(byte[] bytes) {
         assert bytes != null;
         this.bytes = bytes;
+        invalidate();
     }
 
     /**
@@ -1325,6 +1341,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public final void setBegin(int begin) {
         assert begin >= 0;
         this.begin = begin;
+        invalidate();
     }
 
     /**
@@ -1340,6 +1357,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public final void setRealSize(int realSize) {
         assert realSize >= 0;
         this.realSize = realSize;
+        invalidate();
     }
 
     /**
@@ -1355,6 +1373,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public final void setEncoding(Encoding encoding) {
         assert encoding != null;
         this.encoding = safeEncoding(encoding);
+        invalidate();
     }
 
     /**
