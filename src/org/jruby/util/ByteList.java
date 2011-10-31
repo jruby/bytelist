@@ -71,6 +71,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     int hash;
 
     String stringValue;
+    
+    private boolean shared;
 
     private static final int DEFAULT_SIZE = 4;
 
@@ -89,7 +91,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList(int size) {
         bytes = new byte[size];
-        realSize = 0;
     }
 
     /**
@@ -160,6 +161,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList(ByteList wrap) {
         this(wrap.bytes, wrap.begin, wrap.realSize, wrap.encoding, true);
+        this.shared = true;
+        wrap.shared = true;
     }
 
     /**
@@ -247,6 +250,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList(ByteList wrap, int index, int len) {
         this(wrap.bytes, wrap.begin + index, len);
+        shared = true;
+        wrap.shared = true;
     }
 
     /**
@@ -262,8 +267,13 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert start + len <= begin + realSize : "too many bytes requested";
 
         realSize -= len;
-        
-        System.arraycopy(bytes, start + len, bytes, start, realSize);
+     
+        if (shared) {
+            byte[] newBytes = new byte[realSize];
+            System.arraycopy(bytes, start + len, newBytes, start, realSize);
+        } else {
+            System.arraycopy(bytes, start + len, bytes, start, realSize);
+        }
         invalidate();
     }
 
@@ -337,10 +347,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param length to use to make sure ByteList is long enough
      */
     public void ensure(int length) {
-        if (length > bytes.length) {
+        if (shared || length > bytes.length) {
             byte[] tmp = new byte[length + (length >>> 1)];
             System.arraycopy(bytes, begin, tmp, 0, realSize);
             bytes = tmp;
+            begin = 0;
             invalidate();
         }
     }
@@ -361,6 +372,30 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
         shared.realSize = len;
         shared.begin = begin + index;
+        shared.shared = true;
+        this.shared = true;
+
+        return shared;
+    }
+
+    /**
+     * Make a shared copy of this ByteList.  This is used for COW'ing ByteLists, you typically
+     * want a piece of the same backing store to be shared across ByteBuffers, while those
+     * ByteLists will be pointing at different indexes and lengths of the same backing store.
+     *
+     * Note: that this does not update hash or stringValue.
+     *
+     * @param index new begin value for shared ByteBuffer
+     * @param len new length/realSize for chared
+     * @return
+     */
+    public ByteList makeShared() {
+        ByteList shared = new ByteList(bytes, encoding);
+
+        shared.realSize = realSize;
+        shared.begin = begin;
+        shared.shared = true;
+        this.shared = true;
 
         return shared;
     }
@@ -387,19 +422,19 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
 
     /**
      * Array copy the byte backing store so that you can guarantee that no other objects are
-     * referencing this objects backing store.  This version on unshare allows a length to be
-     * specified which will copy length bytes from the old backing store.
+     * referencing this objects backing store.
      *
-     * @param length is the value of how big the buffer is going to be, not the actual length to copy
-     *
-     * It is used by RubyString.modify(int) to prevent COW pathological situations
-     * (namely to COW with having <code>length - realSize</code> bytes ahead)
+     * @param length how large a buffer to guarantee; if smaller than current size,
+     * only length bytes will be preserved.
      */
     public void unshare(int length) {
-        byte[] tmp = new byte[length];
-        System.arraycopy(bytes, begin, tmp, 0, Math.min(realSize, length));
-        bytes = tmp;
-        begin = 0;
+        if (shared || bytes.length - begin < length) {
+            byte[] tmp = new byte[length];
+            System.arraycopy(bytes, begin, tmp, 0, Math.min(realSize, length));
+            bytes = tmp;
+            begin = 0;
+            shared = false;
+        }
     }
 
     /**
@@ -408,6 +443,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     public void invalidate() {
         hash = 0;
         stringValue = null;
+        shared = false;
     }
 
     /**
@@ -557,8 +593,9 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert length >= realSize : "length is too small";
         
         byte tmp[] = new byte[length];
-        System.arraycopy(bytes, 0, tmp, 0, realSize);
+        System.arraycopy(bytes, begin, tmp, 0, realSize);
         bytes = tmp;
+        begin = 0;
         invalidate();
     }
 
@@ -625,6 +662,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         assert index >= 0 : "index must be positive";
         assert begin + index < begin + realSize : "index is too large";
         
+        if (shared) realloc(realSize);
         bytes[begin + index] = (byte)b;
         invalidate();
     }
@@ -666,44 +704,56 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * unsafe versions will not make sure thet beg and len indices are correct.
      */
     public void unsafeReplace(int beg, int len, byte[] nbytes, int index, int count) {
-        grow(count - len);
-        int newSize = realSize + count - len;
-        System.arraycopy(bytes,beg+len,bytes,beg+count,realSize - (len+beg));
-        System.arraycopy(nbytes,index,bytes,beg,count);
-        realSize = newSize;
-        invalidate();
+        // len can be no more than there are bytes available at beg
+        len = Math.min(len, realSize - beg);
+        
+        if (len != 0 || count != 0) {
+            grow(count - len);
+            int newSize = realSize + count - len;
+            if (realSize - (len + beg) > 0) {
+                System.arraycopy(bytes, begin+beg+len, bytes, begin+beg+count, realSize - (len+beg));
+            }
+            System.arraycopy(nbytes,index,bytes,begin+beg,count);
+            realSize = newSize;
+            invalidate();
+        }
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
-     *
-     * @param beg
-     * @param len
-     * @param nbytes
+     * Replace the specified range of bytes in this list with bytes from the
+     * given list.
+     * 
+     * @param beg beginning of range in this list
+     * @param len length of range in this list
+     * @param nbytes list from which to get bytes to use for replacement
      */
     public void replace(int beg, int len, ByteList nbytes) {
         replace(beg, len, nbytes.bytes, nbytes.begin, nbytes.realSize);
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
-     * @param beg
-     * @param len
-     * @param buf
+     * Replace the specified range of bytes in this list with the given bytes.
+     * 
+     * @param beg beginning of range in this list
+     * @param len length of range in this list
+     * @param nbytes bytes to use for replacement
      */
     public void replace(int beg, int len, byte[] buf) {
         replace(beg, len, buf, 0, buf.length);
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
-     * @param beg
-     * @param len
-     * @param nbytes
-     * @param index
-     * @param count
+     * Replace the specified range of bytes in this list with the range of given
+     * bytes.
+     * 
+     * @param beg beginning of range in this list
+     * @param len length of range in this list
+     * @param nbytes bytes to use for replacement
+     * @param index beginning of range in replacement bytes
+     * @param count length of range in replacement bytes
      */
     public void replace(int beg, int len, byte[] nbytes, int index, int count) {
+        unshare();
         unsafeReplace(beg, len, nbytes, index, count);
     }
 
@@ -921,6 +971,28 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
+     * Interface for internal iteration over bytes.
+     */
+    public interface ByteIterator {
+        /**
+         * Receives index and byte value for each byte in this ByteList. Return false to terminate iteration, true to
+         * continue;
+         *
+         * @param index index of current byte
+         * @param bite value of current byte
+         * @return true to continue iteration, false to terminate
+         */
+        public boolean next(int index, byte bite);
+    }
+
+    public void eachByte(ByteIterator iter) {
+        int end = begin + realSize;
+        for (int i = 0; i < realSize; i++) {
+            if (!iter.next(i, bytes[begin + i])) break;
+        }
+    }
+
+    /**
      * Does this ByteList equal the other ByteList?
      *
      * @param other is the bytelist to compare with
@@ -1090,12 +1162,13 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         // new available size
         int newSize = realSize + increaseRequested;
 
-        // only recopy if bytes does not have enough room *after* the begin index
-        if (newSize > bytes.length - begin) {
-            byte[] newBytes = new byte[newSize + (newSize >> 1)];
-            if (bytes.length != 0) System.arraycopy(bytes, begin, newBytes, 0, realSize);
+        // only recopy if shared or bytes does not have enough room *after* the begin index
+        if (shared || newSize > bytes.length - begin) {
+            byte[] newBytes = new byte[newSize + newSize >> 1];
+            if (realSize != 0) System.arraycopy(bytes, begin, newBytes, 0, realSize);
             bytes = newBytes;
             begin = 0;
+            shared = false;
         }
     }
 
@@ -1345,10 +1418,327 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
-     * @return the realSize
+     * Alias for #size()
      */
     public final int getRealSize() {
         return realSize;
+    }
+    
+    /**
+     * The count of bytes in this list.
+     * 
+     * @return the byte count
+     */
+    public final int size() {
+        return realSize;
+    }
+    
+    /**
+     * Return the actual character length of the contained string, using the
+     * ByteList's encoding.
+     * 
+     * @return the character length of the string
+     */
+    public final int charSize() {
+        return charSizeFor(0, realSize);
+    }
+    
+    /**
+     * Return the number of characters in this list from its beginning to
+     * the length (in bytes) specified, using this list's encoding.
+     * 
+     * @return the character length of the specified range of bytes
+     */
+    public final int charSizeTo(int byteLength) {
+        return charSizeFor(0, byteLength);
+    }
+    
+    /**
+     * Return the number of characters in this list from the specified start to
+     * the end of the list, using this list's encoding.
+     * 
+     * @return the character length of the specified range of bytes
+     */
+    public final int charSizeFrom(int start) {
+        return charSizeFor(0, realSize - start);
+    }
+    
+    /**
+     * Return the number of characters in this list from the specified start to
+     * the length (in bytes) specified, using this list's encoding.
+     * 
+     * @return the character length of the specified range of bytes
+     */
+    public final int charSizeFor(int start, int byteLength) {
+        byte[] buf = bytes;
+        int p = begin + start;
+        int end = start + byteLength;
+        Encoding enc = encoding;
+        if (enc.isFixedWidth()) {
+            return (end - p + enc.minLength() - 1) / enc.minLength();
+        } else if (enc.isAsciiCompatible()) {
+            int c = 0;
+            while (p < end) {
+                if (Encoding.isAscii(buf[p])) {
+                    int q = searchNonAscii(buf, p, end);
+                    if (q == -1) return c + (end - p);
+                    c += q - p;
+                    p = q;
+                }
+                p += length(enc, buf, p, end);
+                c++;
+            }
+            return c;
+        }
+        
+        int c;
+        for (c = 0; end > p; c++) p += length(enc, buf, p, end);
+        return c;
+    }
+    
+    /**
+     * Decode this list's bytes using this list's encoding.
+     * @return the decoded string
+     */
+    public final String decode() {
+        return decodeWith(encoding);
+    }
+    
+    /**
+     * Decode this list's bytes using the specified encoding.
+     * 
+     * @param encoding the encoding to use
+     * @return the decoded string
+     */
+    public final String decodeWith(Encoding encoding) {
+        Charset charset = encoding.getCharset();
+
+        // charset is not defined for this encoding in jcodings db.  Try letting Java resolve this.
+        if (charset == null) {
+            charset = Charset.forName(encoding.toString());
+        }
+
+        return charset.decode(ByteBuffer.wrap(bytes, begin, realSize)).toString();
+    }
+    
+    /**
+     * Copy bytes from this list into another list. The list will grow if
+     * necessary.
+     * 
+     * @param other the list to copy into
+     */
+    public void copyTo(ByteList other) {
+        other.unshare(other.realSize);
+        System.arraycopy(bytes, begin, other.bytes, 0, realSize);
+    }
+    
+    /**
+     * Copy bytes from this list into another list. The list will grow if
+     * necessary.
+     * 
+     * @param other the list to copy into
+     * @param len the number of bytes to copy
+     */
+    public void copyTo(ByteList other, int len) {
+        other.unshare(len);
+        System.arraycopy(bytes, begin, other.bytes, 0, len);
+    }
+    
+    /**
+     * Copy bytes from this list into another list. The list will grow if
+     * necessary.
+     * 
+     * @param other the list to copy into
+     * @param fromStart the position in this list to start from
+     * @param toStart the position in the target list to start from
+     * @param len the number of bytes to copy
+     */
+    public void copyTo(ByteList other, int fromStart, int toStart, int len) {
+        other.unshare(toStart + len);
+        System.arraycopy(bytes, begin + fromStart, other.bytes, other.begin + toStart, len);
+    }
+
+    /**
+     * Write bytes from the given list into this list. The list will grow if
+     * necessary.
+     *
+     * @param in the incoming byte array
+     * @param list the ByteList from which to get bytes
+     */
+    public void put(int selfStart, ByteList list) {
+        byte[] in = list.bytes;
+        int inStart = list.begin;
+        int len = list.realSize;
+        put(selfStart, in, inStart, len);
+    }
+
+    /**
+     * Write len bytes from the given list into this list. The list will grow if
+     * necessary.
+     *
+     * @param in the incoming byte array
+     * @param list the ByteList from which to get bytes
+     * @param len the number of bytes to write
+     */
+    public void put(int selfStart, ByteList list, int len) {
+        byte[] in = list.bytes;
+        int inStart = list.begin;
+        put(selfStart, in, inStart, len);
+    }
+    
+    /**
+     * Write bytes from the given array into this list. The list will grow if
+     * necessary.
+     * 
+     * @param in the incoming byte array
+     * @param inStart the position in the incoming byte array to start from
+     * @param selfStart the position in this list to start from
+     * @param len the number of bytes to write
+     */
+    public void put(int selfStart, byte[] in, int inStart, int len) {
+        int newLen = Math.max(realSize, selfStart + len);
+
+        unshare(newLen);
+        System.arraycopy(in, inStart, bytes, begin + selfStart, len);
+        realSize = newLen;
+    }
+    
+    /**
+     * Reverse this lists's bytes.
+     * 
+     * @return true if the list was modified, false otherwise.
+     */
+    public void reverse() {
+        unshare();
+        byte[] bytes = this.bytes;
+        int p = begin;
+        int len = realSize;
+
+        for (int i = 0; i < len >> 1; i++) {
+            byte tmp = bytes[p + i];
+            bytes[p + i] = bytes[p + len - i - 1];
+            bytes[p + len - i - 1] = tmp;
+        }
+    }
+    
+    /**
+     * Capitalize the bytelist as ASCII. Return true if the list was modified,
+     * false otherwise.
+     * 
+     * @return true if the list was modified, false otherwise
+     */
+    public boolean capitalize() {
+        unshare();
+        int s = begin;
+        int end = s + realSize;
+        byte[] bytes = this.bytes;
+        boolean modify = false;
+        
+        int c = bytes[s] & 0xff;
+        if (ASCIIEncoding.INSTANCE.isLower(c)) {
+            bytes[s] = AsciiTables.ToUpperCaseTable[c];
+            modify = true;
+        }
+
+        while (++s < end) {
+            c = bytes[s] & 0xff;
+            if (ASCIIEncoding.INSTANCE.isUpper(c)) {
+                bytes[s] = AsciiTables.ToLowerCaseTable[c];
+                modify = true;
+            }
+        }
+
+        return modify;
+    }
+
+    /**
+     * Convert the bytelist to uppercase as ASCII. Return true if the list was
+     * modified, false otherwise.
+     * 
+     * @return true if the list was modified, false otherwise.
+     */
+    public boolean upcase() {
+        unshare();
+        byte[] bytes = this.bytes;
+        int s = begin;
+        int end = s + realSize;
+        boolean modify = false;
+        
+        while (s < end) {
+            int c = bytes[s] & 0xff;
+            if (ASCIIEncoding.INSTANCE.isLower(c)) {
+                bytes[s] = AsciiTables.ToUpperCaseTable[c];
+                modify = true;
+            }
+            s++;
+        }
+        return modify;
+    }
+
+    /**
+     * Convert the bytelist to lowercase as ASCII. Return true if the list was
+     * modified, false otherwise.
+     * 
+     * @return true if the list was modified, false otherwise
+     */
+    public boolean downcase() {
+        unshare();
+        byte[] bytes = this.bytes;
+        int s = begin;
+        int end = s + realSize;
+        boolean modify = false;
+        
+        while (s < end) {
+            int c = bytes[s] & 0xff;
+            if (ASCIIEncoding.INSTANCE.isUpper(c)) {
+                bytes[s] = AsciiTables.ToLowerCaseTable[c];
+                modify = true;
+            }
+            s++;
+        }
+        return modify;
+    }
+
+    /**
+     * Swap the case of this list as ASCII. Return true if the list was modified,
+     * false otherwise.
+     * 
+     * @return true if the list was modified, false otherwise
+     */
+    public boolean swapcase() {
+        unshare();
+        byte[] bytes = this.bytes;
+        int s = begin;
+        int end = s + realSize;
+        boolean modify = false;
+        
+        while (s < end) {
+            int c = bytes[s] & 0xff;
+            if (ASCIIEncoding.INSTANCE.isUpper(c)) {
+                bytes[s] = AsciiTables.ToLowerCaseTable[c];
+                modify = true;
+            } else if (ASCIIEncoding.INSTANCE.isLower(c)) {
+                bytes[s] = AsciiTables.ToUpperCaseTable[c];
+                modify = true;
+            }
+            s++;
+        }
+
+        return modify;
+    }
+    
+    private static int searchNonAscii(byte[]bytes, int p, int end) {
+        while (p < end) {
+            if (!Encoding.isAscii(bytes[p])) return p;
+            p++;
+        }
+        return -1;
+    }
+    
+    private static int length(Encoding enc, byte[]bytes, int p, int end) {
+        int n = enc.length(bytes, p, end);
+        if (n > 0 && end - p >= n) return n;
+        return end - p >= enc.minLength() ? enc.minLength() : end - p;
     }
 
     /**
