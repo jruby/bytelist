@@ -436,11 +436,20 @@ public class ByteListTest extends TestCase {
     }
 
     public void testEnsureSameSize() {
-		ByteList bl = new ByteList(50);
-		byte[] bytes = bl.unsafeBytes();
-		assertEquals(50, bytes.length);
-		bl.ensure(50);
-		assertEquals(bytes, bl.unsafeBytes());
-		assertEquals(50, bl.unsafeBytes().length);
-	}
+        ByteList bl = new ByteList(50);
+        byte[] bytes = bl.unsafeBytes();
+        assertEquals(50, bytes.length);
+        bl.ensure(50);
+        assertEquals(bytes, bl.unsafeBytes());
+        assertEquals(50, bl.unsafeBytes().length);
+    }
+    
+    public void testEnsureAdding() {
+        byte[] wrap = new byte[1];
+        ByteList bl = new ByteList(wrap, 0, 1, false);
+        bl.ensure(2);
+        byte[] newOne = bl.getUnsafeBytes();
+
+        assertTrue(newOne.length > wrap.length);
+    }
 }
