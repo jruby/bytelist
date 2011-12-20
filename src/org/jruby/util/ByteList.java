@@ -242,14 +242,14 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     /**
      * Create a new instance of ByteList using wrap as a backing store where index is the first
      * index in the byte array where the data starts and len indicates how long the data portion
-     * of the bytelist is.
+     * of the bytelist is.  wrap's byte array will be array copied for initial backing store.
      *
      * @param wrap the bytes to use
      * @param index where in the bytes the data starts
      * @param len how long the data is in the wrap array
      */
     public ByteList(ByteList wrap, int index, int len) {
-        this(wrap.bytes, wrap.begin + index, len, false);
+        this(wrap.bytes, wrap.begin + index, len);
         shared = true;
         wrap.shared = true;
     }
