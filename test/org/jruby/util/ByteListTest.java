@@ -70,7 +70,7 @@ public class ByteListTest extends TestCase {
     }
 
     public void testByteListAppendSingleByte() {
-        byte[] bytes = new byte[] {0x5f, 0x51, 0x52, 0x53, 0x54, 0x55};
+        byte[] bytes = new byte[] {0x0f, 0x01, 0x02, 0x03, 0x04, 0x05};
         ByteList b = new ByteList(1);
 
         for (int i = 0; i < bytes.length; i++) {
@@ -283,13 +283,13 @@ public class ByteListTest extends TestCase {
     }
 
     public void testReplaceIndexOffset() {
-        ByteList base = new ByteList(new byte[] {0x51,0x52,0x53});
+        ByteList base = new ByteList(new byte[] {0x01,0x02,0x03});
         ByteList b = (ByteList) base.clone();
-        b.replace(1, 1, new byte[] {0x54,0x55});
-        assertEquals(new ByteList(new byte[] {0x51,0x54,0x55,0x53}), b);
+        b.replace(1, 1, new byte[] {0x04,0x05});
+        assertEquals(new ByteList(new byte[] {0x01,0x04,0x05,0x03}), b);
         b = (ByteList) base.clone();
-        b.replace(0, 3, new byte[] {0x50, 0x50, 0x50}, 1, 2);
-        assertEquals(new ByteList(new byte[] {0x50, 0x50}), b);
+        b.replace(0, 3, new byte[] {0x00, 0x00, 0x00}, 1, 2);
+        assertEquals(new ByteList(new byte[] {0x00, 0x00}), b);
     }
 
     private ByteList S(String s) throws UnsupportedEncodingException {
@@ -309,6 +309,15 @@ public class ByteListTest extends TestCase {
         assertEquals("FzzBar", S(b));
         b.replace(1, 0, S("u"));
         assertEquals("FuzzBar", S(b));
+    }
+
+    public void testReplaceLengthOutOfBounds() {
+        ByteList b = new ByteList(new byte[] {0x01,0x02,0x03});
+        try {
+            b.replace(0, 5, new byte[] { 0x00, 0x00, 0x00 }, 1, 2);
+            fail("should have thrown exception");
+        } catch (IndexOutOfBoundsException e) {
+        }
     }
 
     public void testEquals() {
@@ -365,14 +374,6 @@ public class ByteListTest extends TestCase {
         assertEquals(1, b.lastIndexOf(b3, 6));
         assertEquals(-1, b.lastIndexOf('b', 5));
         assertEquals(-1, b.lastIndexOf(b2, 5));
-    }
-
-    public void testRealloc() {
-        ByteList b = new ByteList(ByteList.plain("hello bytelist"));
-        b.setBegin(1);
-        b.setRealSize(b.getRealSize() - 2);
-        b.realloc(b.getRealSize());
-        assertEquals(new ByteList(ByteList.plain("ello bytelis")), b);
     }
 
     public void testShallowDup() {
@@ -436,20 +437,11 @@ public class ByteListTest extends TestCase {
     }
 
     public void testEnsureSameSize() {
-        ByteList bl = new ByteList(50);
-        byte[] bytes = bl.unsafeBytes();
-        assertEquals(50, bytes.length);
-        bl.ensure(50);
-        assertEquals(bytes, bl.unsafeBytes());
-        assertEquals(50, bl.unsafeBytes().length);
-    }
-    
-    public void testEnsureAdding() {
-        byte[] wrap = new byte[1];
-        ByteList bl = new ByteList(wrap, 0, 1, false);
-        bl.ensure(2);
-        byte[] newOne = bl.getUnsafeBytes();
-
-        assertTrue(newOne.length > wrap.length);
-    }
+		ByteList bl = new ByteList(50);
+		byte[] bytes = bl.unsafeBytes();
+		assertEquals(50, bytes.length);
+		bl.ensure(50);
+		assertEquals(bytes, bl.unsafeBytes());
+		assertEquals(50, bl.unsafeBytes().length);
+	}
 }
