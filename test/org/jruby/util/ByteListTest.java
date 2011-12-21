@@ -444,4 +444,23 @@ public class ByteListTest extends TestCase {
 		assertEquals(bytes, bl.unsafeBytes());
 		assertEquals(50, bl.unsafeBytes().length);
 	}
+	
+    public void testEnsureAdding() {
+        byte[] wrap = new byte[1];
+        ByteList bl = new ByteList(wrap, 0, 1, false);
+        bl.ensure(2);
+        byte[] newOne = bl.getUnsafeBytes();
+
+        assertTrue(newOne.length > wrap.length);
+        assertEquals(0, bl.getBegin());
+
+        // non-zero begin
+        wrap = new byte[100];
+        bl = new ByteList(wrap, 49, 50, false);
+        bl.ensure(200);
+
+        assertTrue(bl.getUnsafeBytes().length >= 200);
+        assertEquals(0, bl.getBegin());
+        assertEquals(50, bl.getRealSize());
+    }
 }

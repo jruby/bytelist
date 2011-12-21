@@ -341,6 +341,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
             byte[] tmp = new byte[length + (length >>> 1)];
             System.arraycopy(bytes, begin, tmp, 0, realSize);
             bytes = tmp;
+            begin = 0;
             invalidate();
         }
     }
