@@ -463,4 +463,14 @@ public class ByteListTest extends TestCase {
         assertEquals(0, bl.getBegin());
         assertEquals(50, bl.getRealSize());
     }
+
+    public void testStartsWithReturnFalseWhenComparedListHasMoreBytes() {
+    	ByteList file_url_start = ByteList.create("file:");
+    	ByteList f = ByteList.create("f");
+    	try {
+    		f.startsWith(file_url_start);
+    	} catch (Exception ex) {
+    		fail("shouldn't have thrown exception");
+    	}
+    }
 }
