@@ -11,15 +11,21 @@
     Byte array based container
   </description>
 
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
   <issueManagement>
-    <system>JIRA</system>
-    <url>http://jira.codehaus.org/browse/JRUBY</url>
+    <system>Github</system>
+    <url>https://github.com/jruby/bytelist/issues</url>
   </issueManagement>
 
   <scm>
-    <connection>scm:svn:http://svn.codehaus.org/jruby</connection>
-    <developerConnection>scm:svn:https://svn.codehaus.org/jruby</developerConnection>
-    <url>http://svn.codehaus.org/jruby</url>
+    <connection>scm:git:git://github.com/jruby/bytelist.git</connection>
+    <developerConnection>scm:git:git@github.com:jruby/bytelist.git</developerConnection>
+    <url>https://github.com/jruby/bytelist</url>
   </scm>
 
   <licenses>
@@ -29,38 +35,6 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
-  <distributionManagement>
-    <repository>
-      <id>codehaus-jruby-repository</id>
-      <name>JRuby Central Repository</name>
-      <url>dav:https://dav.codehaus.org/repository/jruby</url>
-    </repository>
-    <snapshotRepository>
-      <id>codehaus-jruby-snapshot-repository</id>
-      <name>JRuby Central Development Repository</name>
-      <url>dav:https://dav.codehaus.org/snapshots.repository/jruby</url>
-    </snapshotRepository>
-    <site>
-      <id>codehaus-jruby-site</id>
-      <name>JRuby Maven site</name>
-      <url>dav:https://dav.codehaus.org/jruby/info</url>
-    </site>
-  </distributionManagement>
-
-  <repositories>
-    <repository>
-      <id>codehaus</id>
-      <name>Codehaus Repository</name>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <url>http://repository.codehaus.org</url>
-    </repository>
-  </repositories>
 
   <developers>
   </developers>
