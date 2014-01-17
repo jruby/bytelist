@@ -202,7 +202,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @param wrap the bytes to use
      * @param index where in the bytes the data starts
      * @param len how long the data is in the wrap array
-     * @param encoding the encoding of the bytes
      * @param copy if true array copy wrap. otherwise use as backing store
      */
     // FIXME:  Fix the index != 0 not honoring copy and separate out into a different caller. JRuby.next would be the right time for this.
