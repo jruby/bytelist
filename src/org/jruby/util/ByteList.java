@@ -1104,9 +1104,13 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     @Override
     public int hashCode() {
-        if (hash != 0) return hash;
+        int currentHash = hash;
+        if (currentHash != 0) return currentHash;
 
         int key = 0;
+        int begin = this.begin, realSize = this.realSize;
+        byte[] bytes = this.bytes;
+        
         int index = begin;
         final int end = begin + realSize;
         while (index < end) {
@@ -1124,10 +1128,11 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     @Override
     public String toString() {
-        if (stringValue == null) {
-            stringValue = decode(bytes, begin, realSize, "ISO-8859-1");
+        String decoded = this.stringValue;
+        if (decoded == null) {
+            this.stringValue = decoded = decode(bytes, begin, realSize, "ISO-8859-1");
         }
-        return stringValue;
+        return decoded;
     }
 
     /**
