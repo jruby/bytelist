@@ -7,9 +7,8 @@
   <packaging>jar</packaging>
   <version>1.0.11</version>
   <name>ByteList</name>
-  <description>
-    Byte array based container
-  </description>
+  <url>https://github.com/jruby/bytelist</url>
+  <description>Byte array based container</description>
 
   <parent>
     <groupId>org.sonatype.oss</groupId>
