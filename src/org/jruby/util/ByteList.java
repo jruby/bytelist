@@ -630,22 +630,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
-     * Replace the byte array backing store with newBytes.  This method is only referred to in
-     * deprecated method RubyString.view(CharSequence).
-     *
-     * We deprecated this method because it ignore begin and if we
-     *
-     * @param newBytes
-     */
-    @Deprecated
-    public void replace(byte[] newBytes) {
-        assert newBytes != null;
-        this.bytes = newBytes;
-        realSize = newBytes.length;
-        invalidate();
-    }
-
-    /**
      * Unsafe version of replace(int,int,ByteList). The contract is that these
      * unsafe versions will not make sure thet beg and len indices are correct.
      */
@@ -675,36 +659,57 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
+     * Replace all bytes in this ByteList with bytes from the given array.
      *
-     * @param beg
-     * @param len
-     * @param nbytes
+     * @param source bytes to use for replacement
      */
-    public void replace(int beg, int len, ByteList nbytes) {
-        replace(beg, len, nbytes.bytes, nbytes.begin, nbytes.realSize);
+    public void replace(byte[] source) {
+        replace(0, realSize, source, 0, source.length);
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
-     * @param beg
-     * @param len
-     * @param buf
+     * Replace a region of bytes in this ByteList with bytes from the given ByteList.
+     *
+     * @param targetOff offset of target region in this ByteList
+     * @param targetLen length of target region in this ByteList
+     * @param source ByteList to use for replacement
      */
-    public void replace(int beg, int len, byte[] buf) {
-        replace(beg, len, buf, 0, buf.length);
+    public void replace(int targetOff, int targetLen, ByteList source) {
+        replace(targetOff, targetLen, source.bytes, source.begin, source.realSize);
     }
 
     /**
-     * Note: This is as unsafe as unsafeReplace
-     * @param beg
-     * @param len
-     * @param nbytes
-     * @param index
-     * @param count
+     * Replace a region of bytes in this ByteList with bytes from the given array.
+     *
+     * @param targetOff offset of target region in this ByteList
+     * @param targetLen length of target region in this ByteList
+     * @param source bytes to use for replacement
      */
-    public void replace(int beg, int len, byte[] nbytes, int index, int count) {
-        unsafeReplace(beg, len, nbytes, index, count);
+    public void replace(int targetOff, int targetLen, byte[] source) {
+        replace(targetOff, targetLen, source, 0, source.length);
+    }
+
+    /**
+     * Replace a region of bytes in this ByteList with a region of bytes from the given array.
+     *
+     * @param targetOff offset of target region in this ByteList
+     * @param targetLen length of target region in this ByteList
+     * @param source bytes to use for replacement
+     * @param sourceOff offset of source region in the replacement bytes
+     * @param sourceLen length of source region in the replacement bytes
+     */
+    public void replace(int targetOff, int targetLen, byte[] source, int sourceOff, int sourceLen) {
+        int newSize = realSize - targetLen + sourceLen;
+        ensure(newSize);
+        int tailSize = realSize - (targetLen + targetOff);
+        if (tailSize != 0) {
+            System.arraycopy(bytes,begin+targetOff+targetLen,bytes,begin+targetOff+sourceLen,tailSize);
+        }
+        if (sourceLen != 0) {
+            System.arraycopy(source,sourceOff,bytes,begin+targetOff,sourceLen);
+        }
+        realSize = newSize;
+        invalidate();
     }
 
     public void insert(int index, int b) {

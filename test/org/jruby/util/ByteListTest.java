@@ -283,13 +283,16 @@ public class ByteListTest extends TestCase {
     }
 
     public void testReplaceIndexOffset() {
-        ByteList base = new ByteList(new byte[] {0x01,0x02,0x03});
-        ByteList b = (ByteList) base.clone();
-        b.replace(1, 1, new byte[] {0x04,0x05});
-        assertEquals(new ByteList(new byte[] {0x01,0x04,0x05,0x03}), b);
-        b = (ByteList) base.clone();
-        b.replace(0, 3, new byte[] {0x00, 0x00, 0x00}, 1, 2);
-        assertEquals(new ByteList(new byte[] {0x00, 0x00}), b);
+        ByteList base = new ByteList(new byte[] {0x50,0x51,0x52,0x53,0x54});
+        base.setBegin(1);
+        base.setRealSize(3);
+        base.replace(1, 1, new byte[] {0x54,0x55});
+        assertEquals(new ByteList(new byte[] {0x51,0x54,0x55,0x53}), base);
+        base = new ByteList(new byte[] {0x50,0x51,0x52,0x53,0x54});
+        base.setBegin(1);
+        base.setRealSize(3);
+        base.replace(0, 3, new byte[] {0x50, 0x50, 0x50}, 1, 2);
+        assertEquals(new ByteList(new byte[] {0x50, 0x50}), base);
     }
 
     private ByteList S(String s) throws UnsupportedEncodingException {
