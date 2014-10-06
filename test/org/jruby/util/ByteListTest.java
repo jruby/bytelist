@@ -405,7 +405,13 @@ public class ByteListTest extends TestCase {
         assertFalse(blank.startsWith(str));
         assertFalse(blankAndZeroLength.startsWith(str));
     }
-    
+
+    public void testStartsWithWithOffset() {
+        ByteList str = new ByteList("xxxx".getBytes());
+
+        assertFalse(str.startsWith(str, 1));
+    }
+
     public void testConstructorsSetEncoding() {
         ByteList utf8 = new ByteList(new byte[0], UTF8Encoding.INSTANCE);
         assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());

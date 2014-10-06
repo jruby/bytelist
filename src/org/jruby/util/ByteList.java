@@ -893,7 +893,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     public boolean startsWith(ByteList other, int toffset) {
-        if (realSize == 0 || this.bytes().length < other.bytes().length) return false;
+        if (realSize == 0 || this.realSize < other.realSize + toffset) return false;
 
         byte[]ta = bytes;
         int to = begin + toffset;
