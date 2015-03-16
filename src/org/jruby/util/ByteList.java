@@ -46,7 +46,7 @@ import org.jcodings.specific.ASCIIEncoding;
 
 /**
  * ByteList is simple a collection of bytes in the same way a Java String is a collection
- * of characters. However, it's API resembles StringBuffer/StringBuilder more than String
+ * of characters. However, its API resembles StringBuffer/StringBuilder more than String
  * because it is a mutable object.
  */
 @SuppressWarnings("deprecation")
