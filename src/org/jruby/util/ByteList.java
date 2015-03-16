@@ -1287,7 +1287,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
-     * Are these two byte arrays similiar (semantics similiar too compareTo).  This is slightly
+     * Are these two byte arrays similiar (semantics similiar to compareTo).  This is slightly
      * special in that it will only compare the same number of bytes based on the lesser of the two
      * lengths.
      *
@@ -1306,7 +1306,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     }
 
     /**
-     * Are these two byte arrays similiar (semantics similiar too compareTo).
+     * Are these two byte arrays similiar (semantics similiar to compareTo).
      *
      * @return -1, 0, 1
      */
