@@ -1358,13 +1358,25 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      * @return the realSize
      */
     public final int getRealSize() {
-        return realSize;
+        return realSize();
     }
 
     /**
      * @param realSize the realSize to set
      */
     public final void setRealSize(int realSize) {
+        realSize(realSize);
+    }
+
+    /**
+     * @return the realSize
+     */
+    public final int realSize() { return realSize; }
+
+    /**
+     * @param realSize the realSize to set
+     */
+    public final void realSize(int realSize) {
         assert realSize >= 0;
         this.realSize = realSize;
         invalidate();
