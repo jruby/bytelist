@@ -1310,15 +1310,17 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      *
      * @return -1, 0, 1
      */
-    public static int memcmp(final byte[] first, final int firstStart, final byte[] second, final int secondStart, final int len) {
-        if (first == second) return 0;
-        int offset = -1;
-        for (  ; ++offset < len && first[firstStart + offset] == second[secondStart + offset]; ) ;
-        if (offset < len) {
-            return (first[firstStart + offset]&0xFF) > (second[secondStart + offset]&0xFF) ? 1 : -1;
+    public static int memcmp(final byte[] first, final int firstStart, final byte[] second, final int secondStart, int len) {
+        int a = firstStart;
+        int b = secondStart;
+        int tmp;
+
+        for (; len != 0; --len) {
+            if ((tmp = first[a++] - second[b++]) != 0) {
+                return tmp;
+            }
         }
         return 0;
-
     }
 
 
