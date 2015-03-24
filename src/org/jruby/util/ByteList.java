@@ -1039,8 +1039,8 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
         final byte[] other_bytes = other.bytes;
 
         for (int offset = -1; ++offset < len;) {
-            int myCharIgnoreCase = AsciiTables.ToLowerCaseTable[bytes[begin + offset] & 0xff];
-            int otherCharIgnoreCase = AsciiTables.ToLowerCaseTable[other_bytes[other_begin + offset] & 0xff];
+            int myCharIgnoreCase = AsciiTables.ToLowerCaseTable[bytes[begin + offset] & 0xff] & 0xff;
+            int otherCharIgnoreCase = AsciiTables.ToLowerCaseTable[other_bytes[other_begin + offset] & 0xff] & 0xff;
             if (myCharIgnoreCase < otherCharIgnoreCase) {
                 return -1;
             } else if (myCharIgnoreCase > otherCharIgnoreCase) {
