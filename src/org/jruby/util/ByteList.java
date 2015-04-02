@@ -246,6 +246,7 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList(ByteList wrap, int index, int len) {
         this(wrap.bytes, wrap.begin + index, len);
+        encoding = wrap.encoding;
     }
 
     /**
