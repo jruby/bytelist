@@ -4,7 +4,7 @@
   <groupId>org.jruby.extras</groupId>
   <artifactId>bytelist</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.13</version>
+  <version>1.0.14-SNAPSHOT</version>
   <name>ByteList</name>
   <url>https://github.com/jruby/bytelist</url>
   <description>Byte array based container</description>
