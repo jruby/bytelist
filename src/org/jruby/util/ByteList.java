@@ -49,24 +49,16 @@ import org.jcodings.specific.ASCIIEncoding;
  * of characters. However, its API resembles StringBuffer/StringBuilder more than String
  * because it is a mutable object.
  */
-@SuppressWarnings("deprecation")
 public final class ByteList implements Comparable, CharSequence, Serializable {
     private static final long serialVersionUID = -1286166947275543731L;
 
     public static final byte[] NULL_ARRAY = new byte[0];
     public static final ByteList EMPTY_BYTELIST = new ByteList(0);
 
-    @Deprecated
-    public byte[] bytes;
-
-    @Deprecated
-    public int begin;
-
-    @Deprecated
-    public int realSize;
-
-    @Deprecated
-    public Encoding encoding = ASCIIEncoding.INSTANCE;
+    private byte[] bytes;
+    private int begin;
+    private int realSize;
+    private Encoding encoding = ASCIIEncoding.INSTANCE;
 
     int hash;
 
@@ -160,25 +152,6 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
      */
     public ByteList(ByteList wrap) {
         this(wrap.bytes, wrap.begin, wrap.realSize, wrap.encoding, true);
-    }
-
-    /**
-     * Create a new instance of ByteList with the same contents as the passed in ByteList wrap.
-     * The copy parameter gives you control over whether you want this new ByteList to share
-     * the same byte array for its backing store.
-     *
-     * ****IMPORTANT NOTES*****
-     * copy is currently ignored and always assumed false.  This constructor should just go away
-     * so it has been marked as deprecated.
-     *
-     * @param wrap
-     * @param copy
-     *
-     * Deprecated to coincide with JRuby 1.5 (not used by anything we can find luckily)
-     */
-    @Deprecated
-    public ByteList(ByteList wrap, boolean copy) {
-        this(wrap.bytes, wrap.begin, wrap.realSize, wrap.encoding, false);
     }
 
     /**

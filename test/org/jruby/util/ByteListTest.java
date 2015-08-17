@@ -426,10 +426,6 @@ public class ByteListTest extends TestCase {
         
         utf8 = new ByteList(utf8);
         assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
-        utf8 = new ByteList(utf8, false);
-        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
-        utf8 = new ByteList(utf8, true);
-        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
     }
 
     public void testEncodingCantBeNull() {
