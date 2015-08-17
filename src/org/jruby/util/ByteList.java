@@ -49,7 +49,7 @@ import org.jcodings.specific.ASCIIEncoding;
  * of characters. However, its API resembles StringBuffer/StringBuilder more than String
  * because it is a mutable object.
  */
-public final class ByteList implements Comparable, CharSequence, Serializable {
+public class ByteList implements Comparable, CharSequence, Serializable {
     private static final long serialVersionUID = -1286166947275543731L;
 
     public static final byte[] NULL_ARRAY = new byte[0];
@@ -1301,14 +1301,14 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     /**
      * @return the bytes
      */
-    public final byte[] getUnsafeBytes() {
+    public byte[] getUnsafeBytes() {
         return bytes;
     }
 
     /**
      * @param bytes the bytes to set
      */
-    public final void setUnsafeBytes(byte[] bytes) {
+    public void setUnsafeBytes(byte[] bytes) {
         assert bytes != null;
         this.bytes = bytes;
         invalidate();
@@ -1317,14 +1317,14 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     /**
      * @return the begin
      */
-    public final int getBegin() {
+    public int getBegin() {
         return begin;
     }
 
     /**
      * @param begin the begin to set
      */
-    public final void setBegin(int begin) {
+    public void setBegin(int begin) {
         assert begin >= 0;
         this.begin = begin;
         invalidate();
@@ -1333,26 +1333,26 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     /**
      * @return the realSize
      */
-    public final int getRealSize() {
+    public int getRealSize() {
         return realSize();
     }
 
     /**
      * @param realSize the realSize to set
      */
-    public final void setRealSize(int realSize) {
+    public void setRealSize(int realSize) {
         realSize(realSize);
     }
 
     /**
      * @return the realSize
      */
-    public final int realSize() { return realSize; }
+    public int realSize() { return realSize; }
 
     /**
      * @param realSize the realSize to set
      */
-    public final void realSize(int realSize) {
+    public void realSize(int realSize) {
         assert realSize >= 0;
         this.realSize = realSize;
         invalidate();
@@ -1361,14 +1361,14 @@ public final class ByteList implements Comparable, CharSequence, Serializable {
     /**
      * @return the encoding
      */
-    public final Encoding getEncoding() {
+    public Encoding getEncoding() {
         return encoding;
     }
 
     /**
      * @param encoding the encoding to set
      */
-    public final void setEncoding(Encoding encoding) {
+    public void setEncoding(Encoding encoding) {
         assert encoding != null;
         this.encoding = safeEncoding(encoding);
         invalidate();
