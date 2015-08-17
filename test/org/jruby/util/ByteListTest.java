@@ -426,10 +426,6 @@ public class ByteListTest extends TestCase {
         
         utf8 = new ByteList(utf8);
         assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
-        utf8 = new ByteList(utf8, false);
-        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
-        utf8 = new ByteList(utf8, true);
-        assertEquals(UTF8Encoding.INSTANCE, utf8.getEncoding());
     }
 
     public void testEncodingCantBeNull() {
@@ -446,14 +442,14 @@ public class ByteListTest extends TestCase {
     }
 
     public void testEnsureSameSize() {
-		ByteList bl = new ByteList(50);
-		byte[] bytes = bl.unsafeBytes();
-		assertEquals(50, bytes.length);
-		bl.ensure(50);
-		assertEquals(bytes, bl.unsafeBytes());
-		assertEquals(50, bl.unsafeBytes().length);
-	}
-	
+        ByteList bl = new ByteList(50);
+        byte[] bytes = bl.unsafeBytes();
+        assertEquals(50, bytes.length);
+        bl.ensure(50);
+        assertEquals(bytes, bl.unsafeBytes());
+        assertEquals(50, bl.unsafeBytes().length);
+    }
+
     public void testEnsureAdding() {
         byte[] wrap = new byte[1];
         ByteList bl = new ByteList(wrap, 0, 1, false);
@@ -474,12 +470,12 @@ public class ByteListTest extends TestCase {
     }
 
     public void testStartsWithReturnFalseWhenComparedListHasMoreBytes() {
-    	ByteList file_url_start = ByteList.create("file:");
-    	ByteList f = ByteList.create("f");
-    	try {
-    		f.startsWith(file_url_start);
-    	} catch (Exception ex) {
-    		fail("shouldn't have thrown exception");
-    	}
+        ByteList file_url_start = ByteList.create("file:");
+        ByteList f = ByteList.create("f");
+        try {
+            f.startsWith(file_url_start);
+        } catch (Exception ex) {
+            fail("shouldn't have thrown exception");
+        }
     }
 }
