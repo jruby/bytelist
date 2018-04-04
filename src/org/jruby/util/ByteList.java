@@ -551,6 +551,15 @@ public class ByteList implements Comparable, CharSequence, Serializable {
         return this.charSize = encoding.length(bytes, begin, realSize);
     }
 
+    /**
+     * Return true if the ByteList has zero length (byte length).
+     *
+     * @return true if empty, false otherwise
+     */
+    public boolean isEmpty() {
+        return realSize == 0;
+    }
+
     // ENEBO: Wow...what happens if newLength < realSize...nasty shrinkage?
     /**
      * grow the bytelist to be newLength in size.
