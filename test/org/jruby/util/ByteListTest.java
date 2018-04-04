@@ -36,22 +36,22 @@ import org.jcodings.specific.ASCIIEncoding;
 import junit.framework.TestCase;
 
 public class ByteListTest extends TestCase {
-    public void testEmptyByteListHasZeroLength() {
-        assertEquals(0, new ByteList().length());
-        assertEquals(0, new ByteList(32).length());
+    public void testEmptyByteListHasZeroByteLength() {
+        assertEquals(0, new ByteList().byteLength());
+        assertEquals(0, new ByteList(32).byteLength());
     }
 
     public void testByteListWithInitialByteArray() {
         byte[] bytes = new byte[] {0x0f, 0x01, 0x02, 0x03, 0x04, 0x05};
 
         ByteList b = new ByteList(bytes);
-        assertEquals(bytes.length, b.length());
+        assertEquals(bytes.length, b.byteLength());
         b.set(0, 0x00);
         assertEquals(0x0f, bytes[0]);
         assertEquals(0x00, b.get(0));
 
         ByteList b2 = new ByteList(b);
-        assertEquals(b.length(), b2.length());
+        assertEquals(b.byteLength(), b2.byteLength());
         b2.set(0, 0x0f);
         assertEquals(0x0f, b2.get(0));
         assertEquals(0x00, b.get(0));
@@ -60,12 +60,12 @@ public class ByteListTest extends TestCase {
     public void testByteListWithSubrangeOfInitialBytes() {
         byte[] bytes = new byte[] {0x0f, 0x01, 0x02, 0x03, 0x04, 0x05};
         ByteList b = new ByteList(bytes, 2, 2);
-        assertEquals(2, b.length());
+        assertEquals(2, b.byteLength());
         assertEquals(0x02, b.get(0));
         assertEquals(0x03, b.get(1));
 
         ByteList b2 = new ByteList(b, 1, 1);
-        assertEquals(1, b2.length());
+        assertEquals(1, b2.byteLength());
         assertEquals(0x03, b2.get(0));
     }
 
@@ -108,7 +108,7 @@ public class ByteListTest extends TestCase {
         bytes = new byte[] {0x0f, 0x01, 0x02, 0x03, 0x04, 0x05};
         b = new ByteList(bytes);
         b.prepend((byte) 0x0e);
-        assertEquals(7, b.length());
+        assertEquals(7, b.byteLength());
         assertEquals(0x0e, b.get(0));
         assertEquals(0x05, b.get(6));
     }
@@ -118,7 +118,7 @@ public class ByteListTest extends TestCase {
 
         b.append(new byte[] {0x01, 0x02, 0x03});
 
-        assertEquals(3, b.length());
+        assertEquals(3, b.byteLength());
         assertEquals(0x01, b.get(0));
         assertEquals(0x02, b.get(1));
         assertEquals(0x03, b.get(2));
@@ -128,7 +128,7 @@ public class ByteListTest extends TestCase {
         ByteList b = new ByteList(1);
 
         b.append(new byte[] {0x0f, 0x01, 0x02, 0x03, 0x04, 0x05}, 1, 4);
-        assertEquals(4, b.length());
+        assertEquals(4, b.byteLength());
         assertEquals(0x01, b.get(0));
         assertEquals(0x02, b.get(1));
         assertEquals(0x03, b.get(2));
@@ -143,7 +143,7 @@ public class ByteListTest extends TestCase {
             b.append(bytes[i]);
         }
 
-        assertEquals(9, b.length());
+        assertEquals(9, b.byteLength());
         assertEquals(2, b.get(0));
         assertEquals(3, b.get(1));
         assertEquals(4, b.get(2));
@@ -163,7 +163,7 @@ public class ByteListTest extends TestCase {
             b.append(ints[i]);
         }
 
-        assertEquals(7, b.length());
+        assertEquals(7, b.byteLength());
         assertEquals(2, b.get(0));
         assertEquals(3, b.get(1));
         assertEquals(4, b.get(2));
@@ -181,7 +181,7 @@ public class ByteListTest extends TestCase {
             b.prepend(bytes[i]);
         }
 
-        assertEquals(7, b.length());
+        assertEquals(7, b.byteLength());
         assertEquals(8, b.get(0));
         assertEquals(7, b.get(1));
         assertEquals(6, b.get(2));
@@ -196,7 +196,7 @@ public class ByteListTest extends TestCase {
 
         b.append(new byte[] {6, 7, 8, 9, 10});
 
-        assertEquals(9, b.length());
+        assertEquals(9, b.byteLength());
         assertEquals(2, b.get(0));
         assertEquals(3, b.get(1));
         assertEquals(4, b.get(2));
@@ -212,7 +212,7 @@ public class ByteListTest extends TestCase {
         ByteList b = new ByteList(new byte[] {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 127}, 6, 4, false);
 
         b.append(new byte[] {6, 7, 8, 9, 10}, 1, 4);
-        assertEquals(8, b.length());
+        assertEquals(8, b.byteLength());
         assertEquals(2, b.get(0));
         assertEquals(3, b.get(1));
         assertEquals(4, b.get(2));
@@ -231,7 +231,7 @@ public class ByteListTest extends TestCase {
 
     public void notestGetAndSetOutsideOfLengthShouldFail() {
         ByteList b = new ByteList(10);
-        assertEquals(0, b.length());
+        assertEquals(0, b.byteLength());
         try {
             b.get(0);
             fail("should throw IndexOfOfBoundsException");
@@ -277,7 +277,7 @@ public class ByteListTest extends TestCase {
         ByteList b = new ByteList(1);
 
         b.replace(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05});
-        assertEquals(5, b.length());
+        assertEquals(5, b.byteLength());
         assertEquals(0x01, b.get(0));
         assertEquals(0x05, b.get(4));
     }
@@ -384,8 +384,8 @@ public class ByteListTest extends TestCase {
         b.append("hello".getBytes());
         ByteList d = b.shallowDup();
 
-        assertEquals(5, b.length());
-        assertEquals(5, d.length());
+        assertEquals(5, b.byteLength());
+        assertEquals(5, d.byteLength());
     }
 
     public void testEndsWithOnEmptyByteList() {
