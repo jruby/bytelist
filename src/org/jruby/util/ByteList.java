@@ -37,6 +37,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -581,7 +582,7 @@ public class ByteList implements Comparable, CharSequence, Serializable {
     public int get(int index) {
         assert index >= 0 : "index must be positive";
         
-        return bytes[begin + index];
+        return bytes[begin + index] & 0xFF;
     }
 
     /**
@@ -1117,6 +1118,15 @@ public class ByteList implements Comparable, CharSequence, Serializable {
             this.stringValue = decoded = decode(bytes, begin, realSize, encoding.getCharsetName());
         }
         return decoded;
+    }
+
+    /**
+     * Produce a String using the raw (ISO-8859-1) bytes of this ByteList.
+     *
+     * @return a String based on the raw bytes
+     */
+    public String toByteString() {
+        return new String(bytes, begin, realSize, StandardCharsets.ISO_8859_1);
     }
 
     /**
