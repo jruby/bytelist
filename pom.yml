@@ -1,6 +1,9 @@
 modelVersion: 4.0.0
-parent: {artifactId: oss-parent, groupId: org.sonatype.oss, relativePath: ../pom.xml,
-  version: 7}
+parent:
+  artifactId: oss-parent
+  groupId: org.sonatype.oss
+  relativePath: ../pom.xml
+  version: 7
 groupId: org.jruby.extras
 artifactId: bytelist
 version: 2.0.0-SNAPSHOT
@@ -13,9 +16,10 @@ licenses:
 - {name: LGPL 3, url: 'http://www.gnu.org/licenses/lgpl-3.0-standalone.html'}
 - {name: EPL, url: 'http://www.eclipse.org/legal/epl-v10.html'}
 scm:
-- connection: 'scm:git:git://github.com/jruby/bytelist.git'
+  connection: 'scm:git:git://github.com/jruby/bytelist.git'
   developerConnection: 'scm:git:git@github.com:jruby/bytelist.git'
-  tag: HEAD, url: 'https://github.com/jruby/bytelist'
+  tag: HEAD
+  url: 'https://github.com/jruby/bytelist'
 issueManagement: {system: Github, url: 'https://github.com/jruby/bytelist/issues'}
 dependencies:
 - {groupId: junit, artifactId: junit, version: 3.8.1, scope: test}
