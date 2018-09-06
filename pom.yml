@@ -23,7 +23,7 @@ scm:
 issueManagement: {system: Github, url: 'https://github.com/jruby/bytelist/issues'}
 dependencies:
 - {groupId: junit, artifactId: junit, version: 3.8.1, scope: test}
-- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.18}
+- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.32-SNAPSHOT}
 build:
   extensions:
   - {artifactId: wagon-webdav-jackrabbit, groupId: org.apache.maven.wagon, version: 2.1}
@@ -44,7 +44,23 @@ build:
       priority: 0
   - groupId: org.apache.maven.plugins
     artifactId: maven-compiler-plugin
-    configuration: {source: 1.7, target: 1.7}
+    version: 3.8.0
+    executions:
+    - id: default-compile
+      configuration:
+        source: 1.7
+        target: 1.7
+        excludes: [module-info.java]
+      inherited: true
+      priority: 0
+    - id: compile9
+      goals: [compile]
+      phase: compile
+      configuration:
+        release: 9
+        includes: [module-info.java]
+      inherited: true
+      priority: 1
   - groupId: org.apache.maven.plugins
     artifactId: maven-jar-plugin
     configuration:
