@@ -33,15 +33,11 @@ build:
     executions:
     - goals: [jar]
       id: attach-sources
-      inherited: true
-      priority: 0
   - groupId: org.apache.maven.plugins
     artifactId: maven-javadoc-plugin
     executions:
     - goals: [jar]
       id: attach-javadocs
-      inherited: true
-      priority: 0
   - groupId: org.apache.maven.plugins
     artifactId: maven-compiler-plugin
     version: 3.8.0
@@ -51,16 +47,12 @@ build:
         source: 1.7
         target: 1.7
         excludes: [module-info.java]
-      inherited: true
-      priority: 0
     - id: compile9
       goals: [compile]
       phase: compile
       configuration:
         release: 9
         includes: [module-info.java]
-      inherited: true
-      priority: 1
   - groupId: org.apache.maven.plugins
     artifactId: maven-jar-plugin
     configuration:
