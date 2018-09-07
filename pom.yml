@@ -23,7 +23,7 @@ scm:
 issueManagement: {system: Github, url: 'https://github.com/jruby/bytelist/issues'}
 dependencies:
 - {groupId: junit, artifactId: junit, version: 3.8.1, scope: test}
-- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.32-SNAPSHOT}
+- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.33-SNAPSHOT}
 build:
   extensions:
   - {artifactId: wagon-webdav-jackrabbit, groupId: org.apache.maven.wagon, version: 2.1}
