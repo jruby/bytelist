@@ -2,3 +2,5 @@ target
 /.settings/
 /examples/.redcar/
 /.redcar/
+.idea/
+bytelist.iml
