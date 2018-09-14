@@ -2,7 +2,6 @@ modelVersion: 4.0.0
 parent:
   artifactId: oss-parent
   groupId: org.sonatype.oss
-  relativePath: ../pom.xml
   version: 7
 groupId: org.jruby.extras
 artifactId: bytelist
@@ -23,7 +22,7 @@ scm:
 issueManagement: {system: Github, url: 'https://github.com/jruby/bytelist/issues'}
 dependencies:
 - {groupId: junit, artifactId: junit, version: 3.8.1, scope: test}
-- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.33-SNAPSHOT}
+- {groupId: org.jruby.jcodings, artifactId: jcodings, version: 1.0.34}
 build:
   extensions:
   - {artifactId: wagon-webdav-jackrabbit, groupId: org.apache.maven.wagon, version: 2.1}
