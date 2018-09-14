@@ -125,7 +125,7 @@
           </plugin>
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.9</version>
+            <version>3.0.1</version>
             <executions>
               <execution>
                 <id>attach-javadocs</id>
